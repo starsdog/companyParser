@@ -1,0 +1,15 @@
+---
+- hosts: all
+  user: root
+  tasks:
+     - name: install common packages
+       apt: pkg={{ item }} state=latest
+       with_items:
+         - ansible
+         - python3-pip
+    
+     - name:  install python3 dependency lib
+       pip: name={{ item }} executable=pip3
+       with_items:
+         - requests>=2.9.1
+         - scrapy
