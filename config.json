@@ -1,0 +1,9 @@
+{
+    "xml_folder":"/home/ling/companyParser/xml/",
+    "json_folder":"/home/ling/companyParser/json/",
+
+    "target":["日月光半導體"],
+    "start":2014,
+    "end":2014
+   
+}
