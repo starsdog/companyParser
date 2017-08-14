@@ -48,18 +48,19 @@ class companyNode(object):
         for china_company in china_list:
             for child in china_company:
                 #print("china chila={}".format(child.tag))
-                source=''
+                source=name
                 if 'CompanyNameOfTheInvesteeInMainlandChina' in child.tag:    
                     sub_source=child.text
                 elif 'PercentageOfOwnershipThroughDirectAndIndirectInvestmentByTheCompany' in child.tag:
                     owner_holder=child.text
             item={"source":source, "sub_source":sub_source, "holder":owner_holder}
             china_sublist.append(item)
+            sublist.append(item)
          
         json_output['sublist']=sublist
-        json_output['china_sublist']=china_sublist
+        #json_output['china_sublist']=china_sublist
         filename='{}_{}.json'.format(str(stock), str(year))
-        file_path=os.path.join(self.json_folder, filename)
+        file_path=os.path.join(self.mops_folder, str(stock), filename)
         output=open(file_path, "w")
         output.write(json.dumps(json_output, ensure_ascii=False))
         output.close()
@@ -75,6 +76,73 @@ class companyNode(object):
         output=open(output_file, "wb")
         output.write(r.content)
         output.close()
+
+    def parse_mops(self, stock, year):
+        filename='{}_{}.json'.format(str(stock), str(year))
+        file_path=os.path.join(self.mops_folder, str(stock), filename)
+        input_handler=open(file_path)
+        content=json.load(input_handler)
+        edgelist=[]
+        nodes=set()
+        nodelist=[]
+        for info in content['sublist']:
+            if info['source'] not in nodes:
+                nodes.add(info['source'])
+                nodelist.append({"name":info['source']})
+            if info['sub_source'] not in nodes:
+                nodes.add(info['sub_source'])
+                nodelist.append({"name":info['sub_source']})
+        
+        node_idx= {nodelist[i]['name']:i for i in range(len(nodelist))}
+        for info in content['sublist']:
+            sub_source_idx=node_idx[info['sub_source']]
+            source_idx=node_idx[info['source']]
+            owner_holder=info['holder']*100
+            item={"source":source_idx, "target":sub_source_idx, "holder":owner_holder}
+            edgelist.append(item)
+        
+        reparsed_content={"y":year, "nodes":nodelist, "edges":edgelist}
+        file_path=os.path.join(self.show_mops_folder, str(stock), filename)
+        output=open(file_path, "w")
+        output.write(json.dumps(reparsed_content, ensure_ascii=False))
+        output.close()
+
+    def parse_credit(self, stock, year):
+        filename='{}_{}.json'.format(str(stock), str(year))
+        file_path=os.path.join(self.credit_folder, str(stock), filename)
+        input_handler=open(file_path)
+        content=json.load(input_handler)
+        edgelist=[]
+        nodes=set()
+        nodelist=[]
+        for info in content['subinfo']:
+            if len(info['tblHolder']):
+                sub_source=info['name']
+                if sub_source not in nodes:
+                    nodes.add(sub_source)
+                    nodelist.append({"name":sub_source})
+                for holder_idx in range(1, len(info['tblHolder'])):
+                    source=info['tblHolder'][holder_idx][0]
+                    if source not in nodes:
+                        nodes.add(source)
+                        nodelist.append({"name":source})
+    
+        node_idx= {nodelist[i]['name']:i for i in range(len(nodelist))}
+        for info in content['subinfo']:
+            if len(info['tblHolder']):
+                sub_source_idx=node_idx[info['name']]
+                for holder_idx in range(1, len(info['tblHolder'])):
+                    source_idx=node_idx[info['tblHolder'][holder_idx][0]]
+                    owner_holder=info['tblHolder'][holder_idx][1]
+                    item={"source":source_idx, "target":sub_source_idx, "holder":owner_holder}
+                    edgelist.append(item)
+         
+        reparsed_content={"y":year, "nodes":nodelist, "edges":edgelist}
+        file_path=os.path.join(self.show_credit_folder, str(stock), filename)
+        output=open(file_path, "w")
+        output.write(json.dumps(reparsed_content, ensure_ascii=False))
+        output.close()
+        
 
 if __name__=="__main__":
     arg_parser = argparse.ArgumentParser()
@@ -100,6 +168,7 @@ if __name__=="__main__":
         else:
             print("can't find stock number of {}".format(t))
 
+    year=project_config['start']
     parser=companyNode('config.json') 
     if task=='parse':
         for key in stock_dict.keys():
@@ -107,5 +176,11 @@ if __name__=="__main__":
     elif task=='download':
         for key in stock_dict.keys():
             parser.download_xml(stock_dict[key], 2014)
+    elif task=='reparse_credit':
+        for key in stock_dict.keys():
+            parser.parse_credit(stock_dict[key], year)
+    elif task=='reparse_mops':
+        for key in stock_dict.keys():
+            parser.parse_mops(stock_dict[key], year)
     else:
         print("no match job!")

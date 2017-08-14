@@ -1,6 +1,9 @@
 {
     "xml_folder":"/home/ling/companyParser/xml/",
-    "json_folder":"/home/ling/companyParser/json/",
+    "mops_folder":"/home/ling/companyParser/json/",
+    "credit_folder":"/home/ling/companyParser/credit/",
+    "show_credit_folder":"/home/ling/companyParser/credit_show",
+    "show_mops_folder":"/home/ling/companyParser/mops_show",
 
     "target":["日月光半導體"],
     "start":2014,
