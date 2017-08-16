@@ -8,19 +8,19 @@ function commonErrorHandler(jqXHR, textStatus, errorThrown) {
         window.clearTimeout(id);
     }
 
-    var err_title = multilang('alert_err_title');
+    var err_title = 'alert_err_title';
     var err_str = "";
 
     if (jqXHR.status === 401) {
         authFailedHandler(jqXHR.responseJSON);
         return;
     } else if (jqXHR.status === 502) {
-        err_str = multilang('alert_err_lost_connect');
+        err_str = 'alert_err_lost_connect';
     } else {
         if (jqXHR.responseJSON) {
-            err_str = jqXHR.status + ": " + jqXHR.responseJSON.errorCode + multilang('alert_err_contact_admin');
+            err_str = jqXHR.status + ": " + jqXHR.responseJSON.errorCode + 'alert_err_contact_admin';
         } else {
-            err_str = jqXHR.status + ": " + multilang('alert_err_contact_admin');
+            err_str = jqXHR.status + ": " + 'alert_err_contact_admin';
         }
     }
 
@@ -77,9 +77,9 @@ function req_ajax(a, b) {
     var orig_error_func = a.error;
     a.error = function (jqXHR, textStatus, errorThrown) {
         if (typeof(orig_error_func) == 'function') {
-            orig_error_func(jqXHR, multilang(textStatus), errorThrown);
+            orig_error_func(jqXHR, textStatus, errorThrown);
         }
-        commonErrorHandler(jqXHR, multilang(textStatus), errorThrown);
+        commonErrorHandler(jqXHR, textStatus, errorThrown);
     }
 
     if (a.data) {
