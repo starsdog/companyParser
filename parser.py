@@ -13,10 +13,15 @@ class companyNode(object):
             for key in config.keys():
                 setattr(self, key, config[key])
     
-    
+    def check_folder(self, folder_path):
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+ 
     def parse_xml(self, stock, year, name):
+        folder_path=os.path.join(self.xml_folder, str(stock))
+        self.check_folder(folder_path)
         filename='{}_{}.xml'.format(str(stock), str(year))
-        file_path=os.path.join(self.xml_folder, str(stock), filename)
+        file_path=os.path.join(folder_path, filename)
         tree=ET.parse(file_path)
         content=tree.getroot()
         company_header='{http://www.xbrl.org/tifrs/notes/'+str(year)+'-03-31}'
@@ -72,12 +77,14 @@ class companyNode(object):
         r=requests.post(url, data=payload)
         print("{}, {}".format(r.status_code, len(r.content)))
         filename='{}_{}.xml'.format(str(stock), str(year))
-        output_file=os.path.join(self.xml_folder, str(stock), filename)
+        output_folder=os.path.join(self.xml_folder, str(stock))
+        self.check_folder(output_folder) 
+        output_file=os.path.join(output_folder, filename)        
         output=open(output_file, "wb")
         output.write(r.content)
         output.close()
 
-    def parse_mops(self, stock, year):
+    def parse_mops(self, stock, year):        
         filename='{}_{}.json'.format(str(stock), str(year))
         file_path=os.path.join(self.mops_folder, str(stock), filename)
         input_handler=open(file_path)
@@ -102,7 +109,9 @@ class companyNode(object):
             edgelist.append(item)
         
         reparsed_content={"y":year, "nodes":nodelist, "edges":edgelist}
-        file_path=os.path.join(self.show_mops_folder, str(stock), filename)
+        folder_path=os.path.join(self.show_mops_folder, str(stock))
+        self.check_folder(folder_path)
+        file_path=os.path.join(folder_path, filename)
         output=open(file_path, "w")
         output.write(json.dumps(reparsed_content, ensure_ascii=False))
         output.close()
@@ -138,7 +147,9 @@ class companyNode(object):
                     edgelist.append(item)
          
         reparsed_content={"y":year, "nodes":nodelist, "edges":edgelist}
-        file_path=os.path.join(self.show_credit_folder, str(stock), filename)
+        folder_path=os.path.join(self.show_credit_folder, str(stock))
+        self.check_folder(folder_path)
+        file_path=os.path.join(folder_path, filename)
         output=open(file_path, "w")
         output.write(json.dumps(reparsed_content, ensure_ascii=False))
         output.close()
