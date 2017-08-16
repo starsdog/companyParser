@@ -1,9 +1,9 @@
 {
-    "xml_folder":"/home/ling/companyParser/xml/",
-    "mops_folder":"/home/ling/companyParser/json/",
-    "credit_folder":"/home/ling/companyParser/credit/",
-    "show_credit_folder":"/home/ling/companyParser/credit_show",
-    "show_mops_folder":"/home/ling/companyParser/mops_show",
+    "xml_folder":"/home/ubuntu/companyParser/xml/",
+    "mops_folder":"/home/ubuntu/companyParser/mops/",
+    "credit_folder":"/home/ubuntu/companyParser/credit/",
+    "show_credit_folder":"/home/ubuntu/companyParser/credit_show",
+    "show_mops_folder":"/home/ubuntu/companyParser/mops_show",
 
     "target":["日月光半導體"],
     "start":2014,
