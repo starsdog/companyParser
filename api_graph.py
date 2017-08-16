@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import request, jsonify, Blueprint, make_response
+from flask import request, jsonify, Blueprint, make_response, send_file
 import json
 import os
 
@@ -11,10 +11,10 @@ def download_relation_json():
     info = request.get_json(force=True)
     source=info['source']
     uuid=str(info['uuid'])
-    is_save_file=info['toFile']
+    is_for_graph=info['toGraph']
 
     #get json data
-    if not is_save_file:    
+    if is_for_graph:            
         source=source+'_show'
     file_name="{}_2014.json".format(uuid)
     file_path=os.path.join(root_dir, source, uuid, file_name)
@@ -23,9 +23,4 @@ def download_relation_json():
 
     file_handler=open(file_path)
     content=json.load(file_handler)    
-    if not is_save_file:
-        return make_response(json.dumps(content, ensure_ascii=False), 200)
-    else:
-        response = make_response(json.dumps(content, ensure_ascii=False))
-        response.headers["Content-Disposition"] = "attachment; filename=graph.json"
-        return response
+    return make_response(json.dumps(content, ensure_ascii=False), 200)
