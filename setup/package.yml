@@ -5,11 +5,10 @@
      - name: install common packages
        apt: pkg={{ item }} state=latest
        with_items:
-         - ansible
          - python3-pip
+	 - python3-lxml 
     
      - name:  install python3 dependency lib
        pip: name={{ item }} executable=pip3
        with_items:
          - requests>=2.9.1
-         - scrapy
