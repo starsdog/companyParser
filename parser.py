@@ -17,55 +17,118 @@ class companyNode(object):
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
  
-    def parse_xml(self, stock, year, name):
-        folder_path=os.path.join(self.xml_folder, str(stock))
-        self.check_folder(folder_path)
-        filename='{}_{}.xml'.format(str(stock), str(year))
-        file_path=os.path.join(folder_path, filename)
+    def parse_xml(self, stock, year, name, filename=''):
+        if len(filename)==0:
+            filename='tifrs-fr1-m1-ci-cr-{}-{}Q4.xml'.format(str(stock), str(year))
+        file_path=os.path.join(self.xml_folder, filename)
         tree=ET.parse(file_path)
         content=tree.getroot()
-        company_header='{http://www.xbrl.org/tifrs/notes/'+str(year)+'-03-31}'
+        company_header='{http://www.xbrl.org/tifrs/notes/'+str(year-1)+'-03-31}'
+        
+        #table1: 列入合併財務報表之子公司
+        target_element=company_header+'TheConsolidatedEntities'
+        sublist=[]
+        table1_name_list=[]
+        target_list=content.findall(target_element)
+        for target in target_list:
+            for child in target:
+                if 'CompanyNameOfTheInvestor' in child.tag:
+                    source=child.text.replace(" ",'').replace("\n",'')
+                    if '本公司' in source:
+                        source=name
+                    is_coreSource=0
+                    if name in source:
+                        is_coreSource=1
+                elif 'NameOfInvestee' in child.tag:
+                    sub_source=child.text.replace(" ",'').replace("\n",'')
+                elif 'PercentageOfOwnership4' in child.tag:
+                    if str(year) in child.attrib['contextRef']:
+                        owner_holder=child.text  
+                    
+            item={"source":source, "target":sub_source, "holder":owner_holder, "is_coreSource":is_coreSource, "table_source":1}
+            sublist.append(item)  
+            table1_name_list.append(sub_source)
+        #print(table1_name_list)      
+
+        #table2: 被投資公司名稱、所在地區
         company_element=company_header+'NamesLocationsAndRelatedInformationOfInvesteesOverWhichTheCompanyExercisesSignificantInfluence'
         company_list=content.findall(company_element)
-        json_output={"y":str(year)}
-        sublist=[]
+        table2_list=[]
+        json_output={"year":str(year), "stock":stock}
         for company in company_list:
             for child in company:
                 #print("{}, {}".format(child.tag, child.attrib))
                 if 'CompanyNameOfTheInvestor' in child.tag:
-                    source=child.text
+                    source=child.text.replace(" ",'').replace("\n",'')
                     if '本公司' in source:
                         source=name
+                    is_coreSource=0
+                    if name in source:
+                        is_coreSource=1
                 elif 'CompanyNameOfTheInvestee' in child.tag:
-                    sub_source=child.text
+                    sub_source=child.text.replace(" ",'').replace("\n",'')
+                elif 'Location' in child.tag:
+                    location=child.text.replace(" ",'').replace("\n",'')
                 elif 'InvestmentsAtTheEndOfThePeriod' in child.tag:
                     for sub_invest in child:
                         if 'PercentageOfOwnership1' in sub_invest.tag:
                             owner_holder=sub_invest.text
-            item={"source":source, "sub_source":sub_source, "holder":owner_holder}
-            sublist.append(item)
-        print("sub_company_except_china={}".format(len(sublist)))
+
+            clean_name=sub_source.replace('股份有限','').replace('公司','')
+            is_exist=0
+            for i in range(0, len(table1_name_list)):
+                if clean_name in table1_name_list[i]:
+                    print("{}, {}".format(sub_source, table1_name_list[i]))
+                    is_exist=1
+                    break
+                    
+            if is_exist==1:
+                sublist[i]['location']=location
+                print("table2 find={}, set location={}".format(sub_source, sublist[i]))
+            else:
+                item={"source":source, "target":sub_source, "holder":owner_holder, "location":location, "is_coreSource":is_coreSource, "table_source":2}
+                sublist.append(item)
+        #print("sub_company_except_china={}".format(len(table2_list)))
             
-        china_sublist=[]
+        #table3: 轉投資大陸地區之事業相關資訊 
+        table3_list=[]
         china_company_element=company_header+'InformationOfInvestmentInMainlandChina'
         china_list=content.findall(china_company_element)
         print("china={}".format(len(china_list)))
         for china_company in china_list:
             for child in china_company:
                 #print("china chila={}".format(child.tag))
-                source=name
                 if 'CompanyNameOfTheInvesteeInMainlandChina' in child.tag:    
-                    sub_source=child.text
+                    sub_source=child.text.replace(" ",'').replace("\n",'')
+                    sub_source=sub_source.replace('（註一）','').replace('（註二）','').replace('（註三）','').replace('（註四）','').replace('（註五）','').replace('（註六）','')
+                    sub_source=sub_source.replace('（註七）','').replace('（註八）','').replace('（註九）','').replace('（註十）','').replace('（註十一）','').replace('（註十二）','')
                 elif 'PercentageOfOwnershipThroughDirectAndIndirectInvestmentByTheCompany' in child.tag:
                     owner_holder=child.text
-            item={"source":source, "sub_source":sub_source, "holder":owner_holder}
-            china_sublist.append(item)
-            sublist.append(item)
-         
+                
+            clean_name=sub_source.replace('股份有限','').replace('公司','')
+            is_exist=0
+            for i in range(0, len(table1_name_list)):
+                if clean_name in table1_name_list[i]:
+                    print("{}, {}".format(sub_source, table1_name_list[i]))
+                    is_exist=1  
+                    break
+            
+            if is_exist==1:
+                sublist[i]['location']='china'        
+            else:                         
+                source='再投資大陸公司'
+                item={"source":source, "target":sub_source, "holder":owner_holder, "location":'china', "is_coreSource":0, "table_source":3}
+                sublist.append(item)
+    
+        print(len(sublist))
+        for sub in sublist:
+            print(sub)
+        
         json_output['sublist']=sublist
-        #json_output['china_sublist']=china_sublist
+        output_folder=os.path.join(self.mops_folder, str(stock))
+        self.check_folder(output_folder)
         filename='{}_{}.json'.format(str(stock), str(year))
-        file_path=os.path.join(self.mops_folder, str(stock), filename)
+        file_path=os.path.join(output_folder, filename)
         output=open(file_path, "w")
         output.write(json.dumps(json_output, ensure_ascii=False))
         output.close()
@@ -153,7 +216,16 @@ class companyNode(object):
         output=open(file_path, "w")
         output.write(json.dumps(reparsed_content, ensure_ascii=False))
         output.close()
-        
+
+    def parse_folder(self, folder_path, stock_map):
+        for dirPath, dirNames, fileNames in os.walk(folder_path):        
+            for f in fileNames:
+                if '.xml' in f:
+                    filename="{}".format(os.path.join(dirPath, f))
+                    f_parts=f.split('-')
+                    stock=int(f_parts[5])
+                    year=int(f_parts[6][:4])
+                    self.parse_xml(stock, year, stock_map[stock], filename)
 
 if __name__=="__main__":
     arg_parser = argparse.ArgumentParser()
@@ -171,6 +243,7 @@ if __name__=="__main__":
     with open('stock_map.json') as file:
         stock = json.load(file)
 
+    inv_stock={v:k for k, v in stock.items()}            
     target_list=project_config['target']
     stock_dict={}
     for t in target_list:
@@ -193,5 +266,7 @@ if __name__=="__main__":
     elif task=='reparse_mops':
         for key in stock_dict.keys():
             parser.parse_mops(stock_dict[key], year)
+    elif task=='parse_folder':
+        parser.parse_folder(project_config['xml_folder'], inv_stock)
     else:
         print("no match job!")
