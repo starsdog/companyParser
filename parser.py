@@ -4,6 +4,23 @@ import os
 import json
 import requests
 import argparse
+import time
+import csv
+from lxml import etree
+from lxml import html
+
+class Stack:
+  def __init__(self):
+    self.__storage = []
+
+  def isEmpty(self):
+    return len(self.__storage) == 0
+
+  def push(self,p):
+    self.__storage.append(p)
+
+  def pop(self):
+    return self.__storage.pop()
 
 class companyNode(object):
     def __init__(self, config_file):
@@ -19,6 +36,7 @@ class companyNode(object):
  
     def _check_name_list(self, ori_name, name_list):
         display_name=ori_name
+        is_exist=False
         clean_name=ori_name.replace('股份','').replace('有限','').replace('公司','').replace('(股)','')
         for name_set in name_list:
             is_exist=False
@@ -30,8 +48,35 @@ class companyNode(object):
                 display_name=name_set[0]
                 break
         
-        return display_name        
+        return display_name, is_exist      
 
+    def _find_bracket_pair(self, ori_name, separate_pair):
+        left_bracket = Stack()
+        index = 0
+        string_pair=[]
+        is_balance=True
+        while index < len(ori_name):
+            char = ori_name[index]
+            if char == separate_pair[0]:
+                left_bracket.push(index)
+                #print("push, {}".format(index))
+            elif char == separate_pair[1]:
+                if left_bracket.isEmpty():
+                    is_balance=False
+                    #print("unbalance {}".format(ori_name[index]))
+                    break
+                else:
+                    left_bracket_idx=left_bracket.pop()
+                    string_pair.append([left_bracket_idx+1,index])
+            index += 1
+
+        #print("{},{}, {}".format(ori_name, separate_pair, string_pair))    
+        if is_balance:
+            return string_pair[-1], is_balance  
+        else:
+            return [], is_balance     
+
+           
     def _insert_name_list(self, ori_name, name_list, unique_name_list):
         '''
         ori_name=台灣通運倉儲股份有限公司（台灣通運公司）
@@ -40,6 +85,11 @@ class companyNode(object):
         name_list=[[['台灣通運倉儲股份有限公司', '台灣通運公司', '台灣通運'], ['金昌石礦股份有限公司', '金昌石礦']]
         unique_name_list=('台灣通運倉儲股份有限公司', '台灣通運公司', '台灣通運', '金昌石礦股份有限公司', '金昌石礦')
         '''
+        #check full name exist or not
+        display_name, is_exist=self._check_name_list(ori_name, name_list)
+        if is_exist:
+            return display_name
+
         full_name=ori_name
         display_name=ori_name
         name_set=[]
@@ -47,10 +97,10 @@ class companyNode(object):
         is_separate_find=False
         for separate_pair in separate_list:
             if separate_pair[1] in full_name[-1]:
-                last_index=full_name.rfind(separate_pair[0])
-                if last_index!=-1:
-                    display_name=full_name[:last_index].rstrip(' \n')
-                    name_part2=full_name[last_index+1:-1].replace("\"”以下稱", '').rstrip(' \n')
+                index_pair, is_balance=self._find_bracket_pair(ori_name, separate_pair)
+                if is_balance:
+                    display_name=full_name[:index_pair[0]-1]
+                    name_part2=full_name[index_pair[0]:index_pair[1]].replace("\"”", '').replace("以下稱", '')
                     short_name=display_name.replace('股份','').replace('有限','').replace('公司','').replace('(股)','').rstrip(' \n')
                     is_separate_find=True
                     if display_name not in unique_name_list and short_name not in unique_name_list and name_part2 not in unique_name_list:
@@ -60,15 +110,19 @@ class companyNode(object):
                             unique_name_list.add(name_part2)
                             name_list.append([display_name, name_part2, short_name])
                         else:
-                            name_list.append([display_name, short_name])        
+                            name_list.append([display_name, short_name])  
+                else:
+                    is_separate_find=False                  
 
         if is_separate_find==False:
             short_name=display_name.replace('股份','').replace('有限','').replace('公司','').replace('(股)','').rstrip(' \n')
             if display_name not in unique_name_list and short_name not in unique_name_list:
                 unique_name_list.add(display_name)
                 unique_name_list.add(short_name)      
-                name_list.append([display_name, short_name])        
-        #print("{}, {}".format(ori_name, name_list))
+                name_list.append([display_name, short_name])  
+            else:
+                display_name, is_exist=self._check_name_list(ori_name, name_list)           
+        #print("{}, {}, {}".format(ori_name, display_name, name_list))
         return display_name       
 
     def parse_xml(self, stock, year, name, filename=''):
@@ -90,33 +144,35 @@ class companyNode(object):
                 if 'CompanyNameOfTheInvestor' in child.tag:
                     multi_raw_source=[]
                     multi_source=[]
-                    source=child.text.rstrip(' \n')
+                    source=child.text.replace('\n','').rstrip(' ')
                     if '本公司' in source.replace(' ',''):
                         source=name
                     is_coreSource=0
                     if name in source:
                         is_coreSource=1
-                    source=self._insert_name_list(source, table1_name_list, unique_name_list) 
                     and_index=source.find('及')
                     if and_index!=-1:
-                        multi_raw_source=source.split('及')
+                        multi_raw_source_v1=source.split('及')
+                        for source in multi_raw_source_v1:
+                            multi_raw_source += source.split('、')
+
                         for source in multi_raw_source:
                             source=self._insert_name_list(source, table1_name_list, unique_name_list) 
                             multi_source.append(source)
-                    else:
+                    else:            
+                        source=self._insert_name_list(source, table1_name_list, unique_name_list) 
                         multi_source.append(source)        
                 elif 'NameOfInvestee' in child.tag:
-                    sub_source=child.text.rstrip(' \n')
+                    sub_source=child.text.replace('\n','').rstrip(' ')
                     sub_source=self._insert_name_list(sub_source, table1_name_list, unique_name_list)
                 elif 'PercentageOfOwnership4' in child.tag:
                     if str(year) in child.attrib['contextRef']:
                         owner_holder=child.text  
-                    
+            
             for source in multi_source:
                 item={"source":source, "target":sub_source, "holder":owner_holder, "location":"不明", "is_coreSource":is_coreSource, "table_source1":1, "table_source2":0, "table_source3":0}
                 sublist.append(item) 
-        #print(table1_name_list)      
-
+        
         #table2: 被投資公司名稱、所在地區
         company_element=company_header+'NamesLocationsAndRelatedInformationOfInvesteesOverWhichTheCompanyExercisesSignificantInfluence'
         company_list=content.findall(company_element)
@@ -125,7 +181,7 @@ class companyNode(object):
             for child in company:
                 #print("{}, {}".format(child.tag, child.attrib))
                 if 'CompanyNameOfTheInvestor' in child.tag:
-                    source=child.text.rstrip(' \n')
+                    source=child.text.replace('\n','').rstrip(' ')
                     multi_raw_source=[]
                     multi_source=[]
                     if '本公司' in source.replace(' ',''):
@@ -133,26 +189,28 @@ class companyNode(object):
                     is_coreSource=0
                     if name in source:
                         is_coreSource=1
-                    source=self._check_name_list(source, table1_name_list)  
                     and_index=source.find('及')
                     if and_index!=-1:
-                        multi_raw_source=source.split('及')
+                        multi_raw_source_v1=source.split('及')
+                        for source in multi_raw_source_v1:
+                            multi_raw_source += source.split('、')
+
                         for source in multi_raw_source:
                             source=self._insert_name_list(source, table1_name_list, unique_name_list) 
                             multi_source.append(source)
                     else:
+                        source=self._insert_name_list(source, table1_name_list, unique_name_list)  
                         multi_source.append(source)             
                 elif 'CompanyNameOfTheInvestee' in child.tag:
-                    sub_source=child.text.rstrip(' \n')
-                    sub_source=self._insert_name_list(sub_source, table1_name_list, unique_name_list)
+                    sub_source=child.text.replace('\n','').rstrip(' ')
                 elif 'Location' in child.tag:
-                    location=child.text.rstrip(' \n')
+                    location=child.text.replace('\n','').rstrip(' ')
                 elif 'InvestmentsAtTheEndOfThePeriod' in child.tag:
                     for sub_invest in child:
                         if 'PercentageOfOwnership1' in sub_invest.tag:
                             owner_holder=sub_invest.text
 
-            sub_source=self._check_name_list(sub_source, table1_name_list)
+            sub_source, is_exist=self._check_name_list(sub_source, table1_name_list)
             #print("{}, {}".format(source, sub_source))
             is_exist=0
             for i in range(0, len(sublist)):
@@ -183,27 +241,29 @@ class companyNode(object):
         china_sublist=[]
         #print("china={}".format(len(china_list)))
         for china_company in china_list:
+            sub_source_note=''
+            method=-1
             for child in china_company:
                 #print("china chila={}".format(child.tag))
-                sub_source_note=''
                 if 'CompanyNameOfTheInvesteeInMainlandChina' in child.tag:    
-                    sub_source=child.text.rstrip(' \n')
+                    sub_source=child.text.replace('\n','').rstrip(' ')
                     sub_source=sub_source.replace('（註一）','').replace('（註二）','').replace('（註三）','').replace('（註四）','').replace('（註五）','').replace('（註六）','')
                     sub_source=sub_source.replace('（註七）','').replace('（註八）','').replace('（註九）','').replace('（註十）','').replace('（註十一）','').replace('（註十二）','')
-                    sub_source=self._insert_name_list(sub_source, table1_name_list, unique_name_list)
                 elif 'PercentageOfOwnershipThroughDirectAndIndirectInvestmentByTheCompany' in child.tag:
                     owner_holder=child.text
+                elif 'MethodOfInvestment' in child.tag:
+                    method=int(child.text)
                 elif 'Note' in child.tag:
                     if child.text!=None:
                         sub_source_note=child.text.rstrip(' \n')
 
-            sub_source=self._check_name_list(sub_source, table1_name_list)
+            sub_source, is_exist=self._check_name_list(sub_source, table1_name_list)
             is_exist=0
             for i in range(0, len(sublist)):
                 if sub_source in sublist[i]['target']:
                     sublist[i]['location']='china'
                     sublist[i]['table_source3']=1
-                    china_item={"target":sublist[i]['target'], "holder":sublist[i]['holder'], "note":sub_source_note}
+                    china_item={"target":sublist[i]['target'], "holder":sublist[i]['holder'], "note":sub_source_note, "method":method}
                     china_sublist.append(china_item)
                     is_exist=1  
                     break
@@ -211,7 +271,7 @@ class companyNode(object):
             if is_exist==0:             
                 source='再投資大陸公司'
                 item={"source":source, "target":sub_source, "holder":owner_holder, "location":'china', "is_coreSource":0, "table_source1":0, "table_source2":0, "table_source3":1}
-                china_item={"target":sublist[i]['target'], "holder":sublist[i]['holder'], "note":sub_source_note}
+                china_item={"target":sublist[i]['target'], "holder":sublist[i]['holder'], "note":sub_source_note, "method":method}
                 sublist.append(item)
                 china_sublist.append(china_item)
 
@@ -223,6 +283,8 @@ class companyNode(object):
         sub_note_separate=['(1)', '(2)', '(3)', '(4)', '(5)', '(6)', '(7)', '(8)', '(9)', '(10)', '(11)', '(12)', '(13)', '(14)']
         china_note_list=content.findall(china_note_element)
         for note in china_note_list:
+            china_note=note.text.split("\n")
+            '''
             for i in range(0, len(note_separate)):
                 current_note_list=self.parse_content_by_separate(note.text, note_separate)
 
@@ -232,8 +294,10 @@ class companyNode(object):
                     sub_note_list=self.parse_content_by_separate(current_note, sub_note_separate)
                     if len(sub_note_list):
                         current_note=[sub_note_list]
-                    china_note.append(current_note)
-                
+                        china_note.append(sub_note_list)
+                    else:
+                        china_note.append(current_note)
+            '''    
         china_json['sublist']=china_sublist
         china_json['notelist']=china_note
         
@@ -280,12 +344,26 @@ class companyNode(object):
     def download_xml(self, stock, year):
         payload='step=9&functionName=t164sb01&report_id=C&co_id='+str(stock)+'&year='+str(year)+'&season=4'
         url='http://mops.twse.com.tw/server-java/FileDownLoad'
-        cookie={}
         r=requests.post(url, data=payload)
         print("{}, {}".format(r.status_code, len(r.content)))
         filename='{}_{}.xml'.format(str(stock), str(year))
         output_folder=os.path.join(self.xml_folder, str(stock))
         self.check_folder(output_folder) 
+        output_file=os.path.join(output_folder, filename)        
+        output=open(output_file, "wb")
+        output.write(r.content)
+        output.close()
+
+    def download_board_xml(self, stock, year):
+        taiwan_year=year-1911
+        payload='encodeURIComponent=1&step=1&firstin=1&off=1&keyword4=&code1=&TYPEK2=&checkbtn=&queryName=co_id&inpuType=co_id&TYPEK=all&isnew=false&co_id='+str(stock)+'&year='+str(taiwan_year)+'&month=12'
+        url='http://mops.twse.com.tw/mops/web/ajax_stapap1'
+        r=requests.post(url, data=payload)
+        #print("{}, {}".format(r.status_code, len(r.content)))
+        filename='{}_{}_board.html'.format(str(stock), str(year))
+        output_folder=os.path.join(self.board_folder, str(stock))
+        self.check_folder(output_folder) 
+        print(output_folder)
         output_file=os.path.join(output_folder, filename)        
         output=open(output_file, "wb")
         output.write(r.content)
@@ -371,6 +449,104 @@ class companyNode(object):
                     year=int(f_parts[6][:4])
                     self.parse_xml(stock, year, stock_map[stock], filename)
 
+    def download_board(self, stock_map, year):
+        for stock in stock_map:
+            self.download_board_xml(stock, year)
+            time.sleep(8)
+
+    def parse_board(self, stock, year, name):
+        filename="{}_{}_board.html".format(stock, year)
+        file_path=os.path.join(self.board_folder, str(stock), filename)
+        content=open(file_path).read()
+        parser = etree.HTMLParser(encoding='utf-8')
+        tree=etree.HTML(content, parser)
+        target_list=tree.xpath("//table")
+        total_board=0
+        total_supervisor=0
+        board_dict={}
+        supervisor_dict={}
+        prev_source=''
+        result_list=[]
+        if len(target_list)==0:
+            return result_list, False
+
+        for target in target_list:
+            if target.attrib.get('class')=='hasBorder':
+                for tr_info in target.iter('tr'):
+                    if tr_info.attrib.get('class')=='odd' or tr_info.attrib.get('class')=='even':
+                        td_list=[]
+                        for td_info in tr_info.iter('td'):
+                            td_list.append(td_info.text)
+                        title=td_list[0].replace('\u3000','').rstrip(' \n')
+                        source=td_list[1].replace('\u3000','').rstrip(' \n')
+                        if '法人代表人' in title and '董事' in title:
+                            if prev_source in board_dict.keys():
+                                board_dict[prev_source]+=1
+                            else:
+                                board_dict[prev_source]=1    
+                        elif '法人代表人' in title and '監察' in title:
+                            if prev_source in supervisor_dict.keys():
+                                supervisor_dict[prev_source]+=1
+                            else:
+                                supervisor_dict[prev_source]=1        
+                        elif '董事' in title and '本人' in title:
+                            total_board +=1
+                        elif '監察' in title and '本人' in title:
+                            total_supervisor +=1    
+                        prev_source=source   
+
+        #json_output['totalboard']=total_board
+        #json_output['totalsupervisor']=total_supervisor
+        board_list=[{"source":k, "number":v} for k, v in board_dict.items()]
+        supervisor_list=[{"source":k, "number":v} for k, v in supervisor_dict.items()]
+        #json_output['boardlist']=board_list
+        #json_output['supervisorlist']=supervisor_list
+        for board in board_list:
+            item={"stock":stock, "source":name, "target":board['source'], "totalboard":total_board, "boardnumber":board['number'], "totalsupervisor":total_supervisor, "supervisornumber":0}
+            result_list.append(item)
+        for supervisor in supervisor_list:
+            item={"stock":stock, "source":name, "target":supervisor['source'], "totalboard":total_board, "boardnumber":0, "totalsupervisor":total_supervisor, "supervisornumber":supervisor['number']}
+            result_list.append(item)
+            
+        #print(result_list)
+        return result_list, True
+
+    def parse_board_folder(self, stock_map):
+        output_file=os.path.join(self.board_folder, 'board.csv')
+        output_handler=open(output_file, 'a')
+        writer=csv.DictWriter(output_handler, fieldnames=['stock','source','target','totalboard','boardnumber','totalsupervisor','supervisornumber'])
+        fail_stock=[]
+        for dirPath, dirNames, fileNames in os.walk(self.board_folder):        
+            for f in fileNames:
+                if '.html' in f:
+                    filename="{}".format(os.path.join(dirPath, f))
+                    f_parts=f.split('_')
+                    stock=int(f_parts[0])
+                    year=int(f_parts[1])
+                    result_list, status=self.parse_board(stock, year, stock_map[stock])
+                    if status==False:
+                        fail_stock.append(stock)
+                    else:
+                        for item in result_list:
+                            writer.writerow(item)
+        output_handler.close()  
+        print(fail_stock)              
+
+    def check_board_status(self, stock_map):
+        input_file=os.path.join(self.board_folder, 'board.csv')
+        input_handler=open(input_file, 'r')
+        reader=csv.DictReader(input_handler)
+        done_stock=set()
+        for row in reader:
+            done_stock.add(int(row['stock']))
+
+        target_stock=set(stock_map.keys())
+        unfinished=target_stock-done_stock
+        unfinished_json={k:stock_map[k] for k in unfinished}
+        output_handler=open("stock_map_v2.json", 'w')
+        output_handler.write(json.dumps(unfinished_json, ensure_ascii=False))
+        output_handler.close()
+
 if __name__=="__main__":
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('-t', '--task', metavar='parse', type=str, nargs=1, required=True,
@@ -412,5 +588,14 @@ if __name__=="__main__":
             parser.parse_mops(stock_dict[key], year)
     elif task=='parse_folder':
         parser.parse_folder(project_config['xml_folder'], inv_stock)
+    elif task=='download_board':
+        parser.download_board(inv_stock, 2016)
+    elif task=='parse_board':
+        result_list=parser.parse_board(1538, 2016, inv_stock[1538])
+        print(result_list)
+    elif task=='parse_board_folder':
+        parser.parse_board_folder(inv_stock)   
+    elif task=='check_board_status':
+        parser.check_board_status(inv_stock)
     else:
         print("no match job!")
