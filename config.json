@@ -1,13 +1,43 @@
 {
-    "xml_folder":"/Users/ling/Documents/company/",
-    "board_folder":"/Users/ling/Documents/board_2015/",
-    "mops_folder":"/Users/ling/Documents/companyParser/mops_2016/",
+    "sii":{
+    	"xml_folder":"/Users/ling/Documents/company_2016/",
+    	"board_folder":"/Users/ling/Documents/board_2016/",
+    	"mops_folder":"/Users/ling/Documents/companyParser/mops_2016/",
+    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_sii.json"
+    },
+    
+    "otc":{
+    	"xml_folder":"/Users/ling/Documents/otc_2016/",
+	    "board_folder":"/Users/ling/Documents/otc_board_2016/",
+	    "mops_folder":"/Users/ling/Documents/companyParser/otc_mops_2016/",
+    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_otc.json"
+    },
+    
+    "rotc":{
+    	"xml_folder":"/Users/ling/Documents/rotc_2016/",
+	    "board_folder":"/Users/ling/Documents/rotc_board_2016/",
+	    "mops_folder":"/Users/ling/Documents/companyParser/rotc_mops_2016/",
+    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_rotc.json"
+    },
+
+    "pub":{
+    	"xml_folder":"/Users/ling/Documents/pub_2016/",
+	    "board_folder":"/Users/ling/Documents/pub_board_2016/",
+	    "mops_folder":"/Users/ling/Documents/companyParser/pub_mops_2016/",
+    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_pub.json"
+    },
+
     "credit_folder":"/Users/ling/Documents/companyParser/credit/",
     "show_credit_folder":"/Users/ling/Documents/companyParser/credit_show",
     "show_mops_folder":"/Users/ling/Documents/companyParser/mops_show",
-
-    "target":["日月光半導體"],
+    
+    "zip_folder":"/Users/ling/Documents/zip/",
+    
+    "target":[],
     "start":2016,
-    "end":2014
-   
-}
+    "end":2014,
+
+    "kind":"pub",
+
+    "check_board_list":[2437, 2936, 3708, 4552, 6525, 8442, 8466, 8480, 8488]
+}    
