@@ -1,30 +1,39 @@
 {
     "sii":{
-    	"xml_folder":"/Users/ling/Documents/company_2016/",
-    	"board_folder":"/Users/ling/Documents/board_2016/",
-    	"mops_folder":"/Users/ling/Documents/companyParser/mops_2016/",
-    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_sii.json"
+    	"xml_folder":"/Users/ling/Documents/company_2015/",
+    	"board_folder":"/Users/ling/Documents/board/board_2015/",
+    	"mops_folder":"/Users/ling/Documents/companyParser/mops_2015/",
+    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_sii.json",
+    	"check_board_list":[3553, 3658, 5384, 5395, 6022, 6497, 8266, 8925],
+    	"stock_map_missing_list":[]
     },
     
     "otc":{
-    	"xml_folder":"/Users/ling/Documents/otc_2016/",
-	    "board_folder":"/Users/ling/Documents/otc_board_2016/",
-	    "mops_folder":"/Users/ling/Documents/companyParser/otc_mops_2016/",
-    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_otc.json"
+    	"xml_folder":"/Users/ling/Documents/otc_2015/",
+	    "board_folder":"/Users/ling/Documents/otc_board_2015/",
+	    "mops_folder":"/Users/ling/Documents/companyParser/otc_mops_2015/",
+    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_otc.json",
+    	"check_board_list":[3553, 3658, 5384, 5395, 6022, 6497, 8266, 8925],
+    	"stock_map_missing_list":[]
     },
     
     "rotc":{
-    	"xml_folder":"/Users/ling/Documents/rotc_2016/",
-	    "board_folder":"/Users/ling/Documents/rotc_board_2016/",
-	    "mops_folder":"/Users/ling/Documents/companyParser/rotc_mops_2016/",
-    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_rotc.json"
+    	"xml_folder":"/Users/ling/Documents/rotc_2015/",
+	    "board_folder":"/Users/ling/Documents/rotc_board_2015/",
+	    "mops_folder":"/Users/ling/Documents/companyParser/rotc_mops_2015/",
+    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_rotc.json",
+    	"check_board_list":[4766, 6551, 6598, 6617, 6624, 6625, 6626, 6627, 6633, 6637, 6638, 6640, 8197],
+    	"stock_map_missing_list":[]
     },
 
     "pub":{
-    	"xml_folder":"/Users/ling/Documents/pub_2016/",
-	    "board_folder":"/Users/ling/Documents/pub_board_2016/",
-	    "mops_folder":"/Users/ling/Documents/companyParser/pub_mops_2016/",
-    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_pub.json"
+    	"xml_folder":"/Users/ling/Documents/pub_2015/",
+	    "board_folder":"/Users/ling/Documents/pub_board_2015/",
+	    "mops_folder":"/Users/ling/Documents/companyParser/pub_mops_2015/",
+    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_pub.json",
+    	"check_board_list":[2584, 4181, 4767, 5395, 6476, 6601, 6632, 6661, 8958],
+    	"stock_map_missing_list":[3648, 3656, 6424, 5346],
+    	"missing_stock_map_json":"/Users/ling/Documents/companyParser/stock_map_pub2.json"
     },
 
     "credit_folder":"/Users/ling/Documents/companyParser/credit/",
@@ -34,10 +43,9 @@
     "zip_folder":"/Users/ling/Documents/zip/",
     
     "target":[],
-    "start":2016,
-    "end":2014,
+    "start":2015,
+    "end":2015,
 
-    "kind":"pub",
-
-    "check_board_list":[2437, 2936, 3708, 4552, 6525, 8442, 8466, 8480, 8488]
+    "kind":"otc"
+    
 }    

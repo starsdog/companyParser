@@ -36,6 +36,8 @@ class companyNode(object):
         self.board_folder=self.config[kind]['board_folder']
         self.mops_folder=self.config[kind]['mops_folder']
         self.zip_folder=self.config['zip_folder']
+        self.check_board_list=self.config[kind]['check_board_list']
+        self.missing_stock_list=self.config[kind]['stock_map_missing_list']
 
     def check_folder(self, folder_path):
         if not os.path.exists(folder_path):
@@ -239,14 +241,15 @@ class companyNode(object):
         file_path=os.path.join(self.xml_folder, filename)
         tree=ET.parse(file_path)
         content=tree.getroot()
-        if year==2016 and stock!=1538:
-            company_header='{http://www.xbrl.org/tifrs/notes/2015-03-31}'
-        elif year==2016 and stock==1538:
-            company_header='{http://www.xbrl.org/tifrs/notes/2017-03-31}'
+        if year==2016:
+            if stock in [1538, 3570, 3662, 5309, 6497, 1587, 3603, 5262, 5299, 6288, 6581, 6625, 6640, 4767, 6661]:
+                company_header='{http://www.xbrl.org/tifrs/notes/2017-03-31}'
+            else:
+                company_header='{http://www.xbrl.org/tifrs/notes/2015-03-31}'
         else:
             company_header='{http://www.xbrl.org/tifrs/notes/'+str(year)+'-03-31}'
 
-        
+        #print("{},{}".format(stock, company_header))
         #table1: 列入合併財務報表之子公司
         target_element=company_header+'TheConsolidatedEntities'
         sublist=[]
@@ -521,15 +524,21 @@ class companyNode(object):
 
     def download_xml_by_category(self, year, kind):
         try:
-            target_list=['02','03','04','05','06','07','08','10','11','14','15','16','17','18','20','21','22','23','24','25','26','27','28','29','30','31','32','33','80','91']
-            #target_list=['23','24','25','26','27','28','29','30','31','32','33','80','91']
-            #target_list=['30','31','33', '02', '03', '06', '07', '08', '10', '11', '14', '15', '17', '18', '23', '25']
-            #target_list=['05','06','07','08','10','11','14','15','16','17','18','20','21','22','23','24','25','26','27','28','29','30','31','32','33','80','91']
+            if kind=='pub':
+                target_list=['01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','XX','97', '98','99' ]
+            elif kind=='rotc':
+                target_list=['02','03','04','05','06','07','08','10','11','14','15','16','17','18','20','21', '22','23', '24','25','26','27','28','29','30','31','32','33' ]
+                #target_list=['22','23', '24','25','26','27','28','29','30','31','32','33' ]
+            elif kind=='otc':
+                target_list=['02','03','04','05','06','07','08','10','11','14','15','16','17','18','20','21','22','23','24','25','26','27','28','29','30','31','32','33','80','91']
+            elif kind=='sii':
+                target_list=['01','02','03','04','05','06','07','08','09','10','11','12','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','91']
+
             for target in target_list:
                 #payload='encodeURIComponent=1&step=1&firstin=true&MAR_KIND='+kind+'&CODE='+target+'&SYEAR='+str(year)+'&SSEASON=01&REPORT_ID=C'
                 #url='http://mops.twse.com.tw/mops/web/ajax_t164sb02/server-java/FileDownLoad'
                 filename='{}-04-{}-{}-C.zip'.format(str(year), kind, target)
-                payload='step=9&fileName='+filename+'&filePath=/home/html/nas/ifrs/2016/&firstin=true'
+                payload='step=9&fileName='+filename+'&filePath=/home/html/nas/ifrs/'+str(year)+'/&firstin=true'
                 url='http://mops.twse.com.tw/server-java/FileDownLoad'
                 r=requests.post(url, data=payload)
                 if r.status_code==200:
@@ -537,6 +546,7 @@ class companyNode(object):
                     output_folder=os.path.join(self.zip_folder, kind, str(year))
                     self.check_folder(output_folder)
                     output_file=os.path.join(output_folder, filename)
+                    print(output_file)
                     output=open(output_file,"wb")
                     output.write(r.content)
                     output.close()
@@ -554,11 +564,11 @@ class companyNode(object):
             filename='{}_{}_board.html'.format(str(stock), str(year))
             output_folder=os.path.join(self.board_folder, str(stock))
             self.check_folder(output_folder) 
-            print(output_folder)
-            output_file=os.path.join(output_folder, filename)        
-            output=open(output_file, "wb")
-            output.write(r.content)
-            output.close()
+            output_file=os.path.join(output_folder, filename) 
+            if not os.path.exists(output_file):       
+                output=open(output_file, "wb")
+                output.write(r.content)
+                output.close()
         except Exception as e:
             raise    
 
@@ -633,6 +643,7 @@ class companyNode(object):
         output.close()
 
     def parse_folder(self, stock_map):
+        keyError_list=[]
         try:
             print(self.xml_folder)
             for dirPath, dirNames, fileNames in os.walk(self.xml_folder):        
@@ -642,10 +653,15 @@ class companyNode(object):
                         f_parts=f.split('-')
                         stock=int(f_parts[5])
                         year=int(f_parts[6][:4])
-                        self.parse_xml(stock, year, stock_map[stock], filename)
+                        try:
+                            self.parse_xml(stock, year, stock_map[stock], filename)
+                        except KeyError:
+                            keyError_list.append(stock)
         except Exception as e:
             print(filename)
-            print(traceback.format_exc())                
+            print(traceback.format_exc())     
+
+        print(keyError_list)               
 
     def download_board(self, stock_map, year):
         for stock in stock_map:
@@ -754,14 +770,14 @@ class companyNode(object):
         no_publish=[]
         unknown=[]
         for item in self.check_board_list:
-            filename="{}_{}_board.html".format(str(item), self.start)
+            filename="{}_{}_board.html".format(str(item), self.config['start'])
             file_path=os.path.join(self.board_folder, str(item), filename)
             content=open(file_path).read()
             parser = etree.HTMLParser(encoding='utf-8')
             tree=etree.HTML(content, parser)
             target_list=tree.xpath("//h2")
             if len(target_list):
-                if '資料庫中查無資料' in target_list[0].text:
+                if '查無資料' in target_list[0].text:
                     no_data.append(item)
             
             print(filename)
@@ -776,6 +792,53 @@ class companyNode(object):
         unknown=list(set(self.check_board_list)-set(no_data)-set(no_publish))
         print(unknown)            
 
+    
+    def parse_missing_stock_name(self, year):
+        missing_stock_map={}
+        for dirPath, dirNames, fileNames in os.walk(self.xml_folder):        
+            for f in fileNames:
+                if '.xml' in f:
+                        filename="{}".format(os.path.join(dirPath, f))
+                        f_parts=f.split('-')
+                        stock=int(f_parts[5])
+
+                        if stock in self.missing_stock_list:
+                            tree=ET.parse(filename)
+                            content=tree.getroot()
+                            if year==2016:
+                                if stock in [1538, 3570, 3662, 5309, 6497, 1587, 3603, 5262, 5299, 6288, 6581, 6625, 6640, 4767, 6661]:
+                                    accounting_header='{http://www.xbrl.org/tifrs/ar/2017-03-31}'
+                                else:
+                                    accounting_header='{http://www.xbrl.org/tifrs/ar/2015-03-31}'
+                            else:
+                                accounting_header='{http://www.xbrl.org/tifrs/ar/'+str(year)+'-03-31}'
+
+                            target_element=accounting_header+'AccountantsReportBody'
+                            target_list=content.findall(target_element)
+                            case=0
+                            for target in target_list:
+                                body=target.text
+                                end_index=body.find('公鑒')
+                                start_index=body.find('會計師查核報告')
+                                case=1
+                                if start_index==-1:
+                                    start_index=body.find('會 計 師 查 核 報 告')
+                                    case=2
+                                if start_index==-1:
+                                    case=3
+
+                                if case==1:    
+                                    name=body[start_index+7:end_index].replace('董事會','')
+                                elif case==2:
+                                    name=body[start_index+13:end_index].replace('董事會','')
+                                elif case==3:
+                                    name=body[:end_index].replace('董事會','')
+                                
+                                name=self._convertText(name).rstrip(' ').lstrip(' ')
+                                missing_stock_map[stock]=name
+        
+        return missing_stock_map
+        
     def parse_stock_name(self, inv_stock, year):
         fail_stock=[]
 
@@ -811,6 +874,8 @@ class companyNode(object):
 
     def check_parser_reuslt(self, sublist):
         fail_item=[]
+        check_result=True
+        
         for item in sublist:
             source=item['source']
             target=item['target']
@@ -826,8 +891,14 @@ class companyNode(object):
         
         if check_result==False:
             print(fail_item)
+
+        if len(sublist)==0:
+            check_result=False
+
         return check_result             
         
+
+
 if __name__=="__main__":
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('-t', '--task', metavar='parse', type=str, nargs=1, required=True,
@@ -895,5 +966,11 @@ if __name__=="__main__":
         output_handler=open(project_config[kind]['stock_map_json'], 'w')
         output_handler.write(json.dumps(stock_list, ensure_ascii=False))
         output_handler.close()
+    elif task=='parse_missing_stock_name':
+        missing_stock_map=parser.parse_missing_stock_name(project_config['start'])   
+        inv_stock={v:k for k, v in missing_stock_map.items()}  
+        output_handler=open(project_config[kind]['missing_stock_map_json'], 'w')
+        output_handler.write(json.dumps(inv_stock, ensure_ascii=False))
+        output_handler.close() 
     else:
         print("no match job!")
