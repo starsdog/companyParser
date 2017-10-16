@@ -72,6 +72,32 @@ class companyNode(object):
         new_string = new_string.replace("Ｘ", "X")
         new_string = new_string.replace("Ｙ", "Y")
         new_string = new_string.replace("Ｚ", "Z")
+        new_string = new_string.replace("ａ", "a")
+        new_string = new_string.replace("ｂ", "b")
+        new_string = new_string.replace("ｃ", "c")
+        new_string = new_string.replace("ｄ", "d")
+        new_string = new_string.replace("ｅ", "e")
+        new_string = new_string.replace("ｆ", "f")
+        new_string = new_string.replace("ｇ", "g")
+        new_string = new_string.replace("ｈ", "h")
+        new_string = new_string.replace("ｉ", "i")
+        new_string = new_string.replace("ｊ", "j")
+        new_string = new_string.replace("ｋ", "k")
+        new_string = new_string.replace("ｌ", "l")
+        new_string = new_string.replace("ｍ", "m")
+        new_string = new_string.replace("ｎ", "n")
+        new_string = new_string.replace("ｏ", "o")
+        new_string = new_string.replace("ｐ", "p")
+        new_string = new_string.replace("ｑ", "q")
+        new_string = new_string.replace("ｒ", "r")
+        new_string = new_string.replace("ｓ", "s")
+        new_string = new_string.replace("ｔ", "t")
+        new_string = new_string.replace("ｕ", "u")
+        new_string = new_string.replace("ｖ", "v")
+        new_string = new_string.replace("ｗ", "w")
+        new_string = new_string.replace("ｘ", "x")
+        new_string = new_string.replace("ｙ", "y")
+        new_string = new_string.replace("ｚ", "z")
         new_string = new_string.replace("（", "(")
         new_string = new_string.replace("）", ")")
         new_string = new_string.replace("〔", "(")
@@ -79,6 +105,8 @@ class companyNode(object):
         new_string = new_string.replace("【", "(")
         new_string = new_string.replace("】", ")")
         new_string = new_string.replace("　", " ")
+        new_string = new_string.replace("．", ".")
+        new_string = new_string.replace("，", ",")
         new_string = new_string.replace("\n",'')
         new_string = new_string.replace("  ",'')
         new_string = new_string.replace('1.','').replace('2.','').replace('3.','').replace('4.','').replace('5.','').replace('6.','')
@@ -90,22 +118,24 @@ class companyNode(object):
         new_string = new_string.replace('(註1)','').replace('(註2)','').replace('(註3)','').replace('(註4)','').replace('(註5)','').replace('(註6)','')
         new_string = new_string.replace('(註7)','').replace('(註8)','').replace('(註9)','').replace('(註10)','').replace('(註11)','').replace('(註12)','')
 
+        #print("{},{}".format(textLine, new_string))
         return new_string  
 
     def _check_name_list(self, ori_name, name_list):
         display_name=ori_name
         is_exist=False
-        clean_name=ori_name.replace('股份','').replace('有限','').replace('公司','').replace('(股)','').replace('集團','')
+        clean_name=ori_name.replace('股份','').replace('有限','').replace('公司','').replace('(股)','').replace('集團','').rstrip(' \n').lstrip('\n').rstrip(' ').lstrip(' ')
         for name_set in name_list:
             is_exist=False
             for name in name_set:
-                if clean_name in name:
+                if clean_name.replace(' ','') in name.replace(' ',''):
                     is_exist=True
                     break
             if is_exist:
                 display_name=name_set[0]
                 break
         
+        #print("{},{},{},{}".format(ori_name, display_name, is_exist, name_list))
         return display_name, is_exist      
 
     def _find_bracket_pair(self, ori_name, separate_pair):
@@ -177,7 +207,7 @@ class companyNode(object):
                         #翔智科技股份有限公司(翔智，台灣)
                         index=name_part2.find('，') 
                         name_part2=name_part2[:index]
-                    short_name=display_name.replace('股份','').replace('有限','').replace('公司','').replace('(股)','').replace('集團','').rstrip(' \n')
+                    short_name=display_name.replace('股份','').replace('有限','').replace('公司','').replace('(股)','').replace('集團','').rstrip(' \n').lstrip('\n').rstrip(' ').lstrip(' ')
                     is_separate_find=True
 
                     #簡稱先出現
@@ -246,10 +276,13 @@ class companyNode(object):
                 company_header='{http://www.xbrl.org/tifrs/notes/2017-03-31}'
             else:
                 company_header='{http://www.xbrl.org/tifrs/notes/2015-03-31}'
+        elif year==2013 and stock==2719:
+            company_header='{http://www.xbrl.org/ifrs}'
         else:
             company_header='{http://www.xbrl.org/tifrs/notes/'+str(year)+'-03-31}'
 
-        #print("{},{}".format(stock, company_header))
+
+        print("{},{}".format(stock, company_header))
         #table1: 列入合併財務報表之子公司
         target_element=company_header+'TheConsolidatedEntities'
         sublist=[]
@@ -257,8 +290,11 @@ class companyNode(object):
         unique_name_list=set()
         #insert full name into name_list
         self._insert_name_list(name, table1_name_list, unique_name_list)  
+        #for item in content:
+        #    print("{}".format(item.tag))
 
         target_list=content.findall(target_element)
+        print(len(target_list))
         for target in target_list:
             for child in target:
                 if 'CompanyNameOfTheInvestor' in child.tag:
@@ -356,6 +392,7 @@ class companyNode(object):
                         multi_target.append(sub_source)
                 elif 'Location' in child.tag:
                     location=child.text.replace('\n','').rstrip(' ')
+                    #print("{}, {}".format(child.text, location))
                 elif 'InvestmentsAtTheEndOfThePeriod' in child.tag:
                     for sub_invest in child:
                         if 'PercentageOfOwnership1' in sub_invest.tag:
@@ -364,7 +401,7 @@ class companyNode(object):
             
             for sub_source in multi_target:
                 sub_source, is_exist=self._check_name_list(sub_source, table1_name_list)
-                #print("{}, {}".format(source, sub_source))
+                #print("{}, {}".format(sub_source, is_exist))
                 is_exist=0
                 if sub_source in ['合計','合併']:
                     continue
@@ -389,6 +426,7 @@ class companyNode(object):
                             continue
                         item={"source":source, "target":sub_source, "holder":owner_holder, "location":location, "is_coreSource":is_coreSource, "table_source1":0, "table_source2":1, "table_source3":0}
                         sublist.append(item)
+        #print(sublist)
         #print("sub_company_except_china={}".format(len(table2_list)))
             
         #table3: 轉投資大陸地區之事業相關資訊 
@@ -537,6 +575,10 @@ class companyNode(object):
             for target in target_list:
                 #payload='encodeURIComponent=1&step=1&firstin=true&MAR_KIND='+kind+'&CODE='+target+'&SYEAR='+str(year)+'&SSEASON=01&REPORT_ID=C'
                 #url='http://mops.twse.com.tw/mops/web/ajax_t164sb02/server-java/FileDownLoad'
+                #if year==2014 and kind=='pub':
+
+                #payload='step=9&fileName='+filename+'&filePath=/home/html/nas/xbrl/'+str(year)+'/&firstin=true'
+                #else:    
                 filename='{}-04-{}-{}-C.zip'.format(str(year), kind, target)
                 payload='step=9&fileName='+filename+'&filePath=/home/html/nas/ifrs/'+str(year)+'/&firstin=true'
                 url='http://mops.twse.com.tw/server-java/FileDownLoad'
@@ -554,21 +596,22 @@ class companyNode(object):
         except Exception as e:
             raise 
 
-    def download_board_xml(self, stock, year):
+    def download_board_xml(self, stock, year, check_exist=True):
         try:
             taiwan_year=year-1911 
-            payload='encodeURIComponent=1&step=1&firstin=1&off=1&keyword4=&code1=&TYPEK2=&checkbtn=&queryName=co_id&inpuType=co_id&TYPEK=all&isnew=false&co_id='+str(stock)+'&year='+str(taiwan_year)+'&month=12'
-            url='http://mops.twse.com.tw/mops/web/ajax_stapap1'
-            r=requests.post(url, data=payload)
-            #print("{}, {}".format(r.status_code, len(r.content)))
             filename='{}_{}_board.html'.format(str(stock), str(year))
             output_folder=os.path.join(self.board_folder, str(stock))
             self.check_folder(output_folder) 
             output_file=os.path.join(output_folder, filename) 
-            if not os.path.exists(output_file):       
+            if (check_exist==True and not os.path.exists(output_file)) or check_exist==False:       
+                payload='encodeURIComponent=1&step=1&firstin=1&off=1&keyword4=&code1=&TYPEK2=&checkbtn=&queryName=co_id&inpuType=co_id&TYPEK=all&isnew=false&co_id='+str(stock)+'&year='+str(taiwan_year)+'&month=12'
+                url='http://mops.twse.com.tw/mops/web/ajax_stapap1'
+                r=requests.post(url, data=payload)
+                print("{}".format(filename))
                 output=open(output_file, "wb")
                 output.write(r.content)
                 output.close()
+                time.sleep(10)
         except Exception as e:
             raise    
 
@@ -663,11 +706,10 @@ class companyNode(object):
 
         print(keyError_list)               
 
-    def download_board(self, stock_map, year):
+    def download_board(self, stock_map, year, check_exist=True):
         for stock in stock_map:
             try:
-                self.download_board_xml(stock, year)
-                time.sleep(10)
+                self.download_board_xml(stock, year, check_exist)
             except Exception as e:
                 print(traceback.format_exc())
                 time.sleep(120)    
@@ -697,6 +739,7 @@ class companyNode(object):
                             td_list.append(td_info.text)
                         title=td_list[0].replace('\u3000','').rstrip(' \n')
                         source=td_list[1].replace('\u3000','').rstrip(' \n')
+                        source=self._convertText(source)
                         if '法人代表人' in title and '董事' in title:
                             if prev_source in board_dict.keys():
                                 board_dict[prev_source]+=1
@@ -943,9 +986,9 @@ if __name__=="__main__":
     elif task=='parse_folder':
         parser.parse_folder(inv_stock)
     elif task=='download_board':
-        parser.download_board(stock, project_config['start'])
+        parser.download_board(inv_stock, project_config['start'])
     elif task=='parse_board':
-        result_list=parser.parse_board(1538, 2016, inv_stock[1538])
+        result_list=parser.parse_board(1592, 2016, inv_stock[1592])
         print(result_list)
     elif task=='parse_board_folder':
         parser.parse_board_folder(inv_stock)   
@@ -953,6 +996,8 @@ if __name__=="__main__":
         parser.check_board_status(inv_stock)
     elif task=='check_board_fail_reason':
         parser.check_board_fail_reason()    
+    elif task=='download_missing_board':
+        parser.download_board(project_config[kind]['board_missing_list'], project_config['start'], check_exist=False)
     elif task=='parse_stock_name':
         new_inv_stock=parser.parse_stock_name(stock, project_config['start'])
         new_stock={v:int(k) for k, v in new_inv_stock.items()}  
