@@ -51,6 +51,12 @@
     "start":2013,
     "end":2013,
 
-    "kind":"rotc"
-    
+    "kind":"sii",
+
+    "factory":"/Users/ling/Documents/companyParser/factory_corp.csv",
+    "companyGroup":"/Users/ling/Documents/companyParser/groupdata.taxcode.csv",
+    "groupList":"/Users/ling/Documents/companyParser/groupList_test.json",
+    "taxcodeList":"/Users/ling/Documents/companyParser/taxcodeList.json",
+    "groupInfo":"/Users/ling/Documents/companyParser/groupInfo.json",
+    "stock_map":"/Users/ling/Documents/companyParser/stock_map.json"
 }    
