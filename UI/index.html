@@ -57,25 +57,46 @@ desired effect
         <section class="content">
             <div class="box box-primary">
                 <div class="box-header with-border">
-                    <h3 class="box-title">查詢</h3>
+                    <h3 class="box-title">內容</h3>
                 </div>
         	    <div class="box-body">
-                    <form role="form" action="#" id="assign_group_form" >
-                        <div>來源: 
-                            <select id="graph_source">
-                              <option value="credit">中華</option>
-                              <option value="mops" selected>公開資訊觀測站</option>
-                            </select>   
-                        &nbsp;&nbsp;&nbsp;&nbsp;統一編號：
-                            <input id="uuid" type="text" name="uuid" placeholder="2311" required/>
-                        </div>                          	
+                    <form role="form" action="#" id="query_form" >
+                        <div>年份: 
+                            <select id="year">
+                              <option value="2013">2013</option>
+                            </select>  
+                        </div>    
+                        <div>整合資訊：
+                            <label class="checkbox-inline"><input type="checkbox" value="relation_graph">企業關係下載與查詢</label>
+                            <label class="checkbox-inline"><input type="checkbox" value="thaubing">透明足跡(環保署) </label>
+                            <label class="checkbox-inline"><input type="checkbox" value="violate_rule">重大違規名單</label>
+                            <label class="checkbox-inline"><input type="checkbox" value="tax_discount">租稅減免</label>
+                            <label class="checkbox-inline"><input type="checkbox" value="legislator">立委金主</label>
+                        </div>                      	
         	    	</form>
                 </div>    
-                <button type="submit" class="btn btn-primary" onclick="graph_area.submit(); return false;">Submit</button>
-                <button type="submit" class="btn btn-primary" onclick="graph_json.download(); return false;">Download</button>
+                <button type="submit" class="btn btn-primary" onclick="group_api.query(); return false;">查詢</button>
                 
+            </div>  
+            <div id="table_group_area" style="display: none">  
+                <table id="table_group" class="table table-bordered" >
+                <thead>
+                <tr>
+                    <th >group_no</th>
+                    <th >group_name</th>
+                </tr>
+                </thead>
+                </table>
             </div>    
-                <div id="relation_show" class="relation_graph"></div>
+            <div id="table_company_area" style="display: none">      
+                <table id="table_company" class="table table-bordered">
+                <thead>
+                <tr>
+                    <th >company_name</th>
+                    <th >taxcode</th>
+                </tr>
+                </thead>
+                </table>
            </div>      
 
 	</section>
@@ -89,8 +110,22 @@ desired effect
 <script src="plugin/jQuery/jQuery-2.2.0.min.js"></script>
 <!-- Bootstrap 3.3.6 -->
 <script src="plugin/bootstrap/js/bootstrap.min.js"></script>
+<!-- DataTables -->
+<script src="plugin/datatables/jquery.dataTables.min.js"></script>
+<script src="plugin/datatables/dataTables.bootstrap.min.js"></script>
+<!-- DataTables-Buttons -->
+<script src="plugin/datatables/dataTables.buttons.min.js"></script>
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script src="js/common.js"></script>
 <script src="js/relationforce.js"></script>
+<script src="js/group.js"></script>
+<script>
+    window.onload = function () {
+        var table = $('#table_group');
+        group_table.init(table);
+        var table = $('#table_company');
+        company_table.init(table);
+    }
+</script>        
 </body>
 </html>

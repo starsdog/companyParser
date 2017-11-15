@@ -1,10 +1,13 @@
 from flask import Flask,Blueprint
-import api_graph
+import init
+
+import api.api_graph as api_graph
+import api.api_group as api_group
 
 app = Flask(__name__)
-prefix_url='/relation'
+prefix_url='/company'
 app.register_blueprint(api_graph.mod, url_prefix=prefix_url+'/graph')
-
+app.register_blueprint(api_group.mod, url_prefix=prefix_url+'/group')
 
 @app.route(prefix_url+'/')
 def hello_world():

@@ -1,4 +1,4 @@
-var web_url = "/relation";
+var web_url = "/company";
 
 function commonErrorHandler(jqXHR, textStatus, errorThrown) {
     // Clear all timeouts
