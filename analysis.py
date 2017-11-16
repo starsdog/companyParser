@@ -1,7 +1,8 @@
-
+# -*- coding: utf-8 -*-
 import csv
 import json
 import argparse
+from dbManager import dbManager 
 
 class companyAnalysis(object):
     def __init__(self, config_file):
@@ -13,6 +14,8 @@ class companyAnalysis(object):
         self.group_list=self.config['groupList']
         self.taxcode_list=self.config['taxcodeList']
         self.kind=self.config['kind']
+
+        self.dbManager=dbManager(self.config['db_config'])
             
     def parseThaubing(self):   
         input_handler=open(self.factory_corp, 'r')
@@ -69,6 +72,25 @@ class companyAnalysis(object):
         output_handler.write(json.dumps(taxcode_list, ensure_ascii=False))
         output_handler.close()
         
+    def setup_company_db(self):
+        input_handler=open(self.config['groupInfo'], 'r')
+        reader=json.load(input_handler)
+
+        stock_input=open(self.config['stock_map'])
+        stock_map=json.load(stock_input)
+    
+        for group in reader:
+            group_no=group['group_no']
+            company_list=group['company_list']
+
+            for company in company_list:
+                item={"company_name":company[0], "group_info":json.dumps({self.config['start']:group_no})}
+                print(item)
+                if company[0] in stock_map:
+                    item['stock']=stock_map[company[0]]
+                self.dbManager.insert_company(item)    
+
+
     def generate_group_list(self):
         input_handler=open(self.company_group, 'r')
         reader=csv.DictReader(input_handler)
@@ -108,8 +130,7 @@ class companyAnalysis(object):
             else:
                 if stock in inv_stock:
                     group_stock[group_no].add(inv_stock[stock])   
-                    
-        print(group_stock)            
+                            
         for group_no in group_company_list:    
             company_list=list(group_company_list[group_no])
             updated_company_list=[]
@@ -118,13 +139,14 @@ class companyAnalysis(object):
                     updated_company_list.append([company_name, taxcode_map[company_name]])
             group_company_list[group_no]=updated_company_list
         
-        group_info_list={}
+        group_info_list=[]
         for group_no in group_company_list:
-            group_info_list[group_no]={"company_list":group_company_list[group_no]}
+            group_info_item={"group_no":group_no, "company_list":group_company_list[group_no]}
             if group_no in group_stock:
-                group_info_list[group_no]["group_name_list"]=list(group_stock[group_no])
+                group_info_item["group_name_list"]=list(group_stock[group_no])
             else:
-                group_info_list[group_no]["group_name_list"]=[]    
+                group_info_item["group_name_list"]=[]    
+            group_info_list.append(group_info_item)        
 
         output_handler=open(self.config['groupInfo'], 'w')
         output_handler.write(json.dumps(group_info_list, ensure_ascii=False))
@@ -151,6 +173,8 @@ if __name__=="__main__":
     elif task=='generate_taxcode':
         analysis.generate_taxcode_list()
     elif task=='generate_group_list':
-        analysis.generate_group_list()    
+        analysis.generate_group_list() 
+    elif task=='setup_company_db':
+        analysis.setup_company_db()       
     else:
         print("no match task")        
