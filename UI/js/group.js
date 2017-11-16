@@ -16,11 +16,48 @@ function CompanyItem(array){
 
 }
 
-var group_api={
-    'query':function(){
-        var year=$('#year').val();
-        console.log(year);
+function parseGroups(data) {
+    var parsed_groups = [];
+    var parsed_company = {};
+    $.each(data, function (index, dict) {
+        parsed_groups.push(new GroupItem(dict));
+        var parsed_company_list =[];
+        
+        $.each(dict['company_list'], function (index, array) {
+            parsed_company_list.push(new CompanyItem(array))
+        });   
 
+        parsed_company[dict['group_no']]=parsed_company_list;
+    });
+
+    return [parsed_groups, parsed_company];
+}
+
+var group_api={
+    
+    'hideall': function(){
+        $('#group_query_area').css('display','none');
+        $('#table_query_body').empty();
+        $('#company_name').val('');
+        group_table.hide();
+        company_table.hide();
+    },
+
+    'query': function(){
+        this.hideall();
+        if ($('#relation_graph').is(":checked")){
+            console.log("go relation_graph")
+            this.query_list();
+        }
+        else if ($('#relation_query').is(":checked")){
+            console.log("go relation_query")
+            $('#group_query_area').css('display','inline-block');
+        }    
+    },
+
+    'query_list':function(){
+        var year=$('#year').val();
+        
         req_ajax({
             url: web_url+"/group/list/query",
             data: {
@@ -38,24 +75,37 @@ var group_api={
             error: function (data) {
             }
         }); 
+    },
 
-        function parseGroups(data) {
-            var parsed_groups = [];
-            var parsed_company = {};
-            $.each(data, function (index, dict) {
-                parsed_groups.push(new GroupItem(dict));
-                var parsed_company_list =[];
-                
-                $.each(dict['company_list'], function (index, array) {
-                    parsed_company_list.push(new CompanyItem(array))
-                });   
+    'query_parent':function(){
+        var company_name=$('#company_name').val();
+        
+        req_ajax({
+            url: web_url+"/group/parent/query",
+            data: {
+                "company_name": company_name
+            },
+            success: function(data){
+                $('#table_query_body').empty();
+                if (data['errorCode']!=0){
+                    $('#query_error_msg').text(data['error']);
+                }
+                else{
+                    $('#query_error_msg').text('');
+                    var row='<tr role="row" class="odd">'
+                    row +='<td class="sorting_1">'+data['result'][0]['group_no']+'</td>'
+                    row +='<td class="sorting_1">'+data['result'][0]['group_name']+'</td>'
+                    row += '</tr>'
+                    $('#table_query_body').append(row);
+                }
+               
+            },
+            error: function (data) {
 
-                parsed_company[dict['group_no']]=parsed_company_list;
-            });
 
-            return [parsed_groups, parsed_company];
-        }
-    }
+            }
+        }); 
+    }    
 
 }
 

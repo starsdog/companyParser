@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import request, jsonify, Blueprint, make_response, send_file
+from flask import request, jsonify, Blueprint, make_response, send_file,jsonify
 import init
 import json
 import os
@@ -28,7 +28,7 @@ def query_parent_group():
 
     parent_info=init.dbManager.query_parent(company_name)
     if parent_info==None:
-        return make_response("沒有這家公司的資訊", 200)  
+        return make_response(jsonify({"errorCode":-1, "error":"沒有這家公司的資訊"}), 200)  
 
     group_no_info=json.loads(parent_info['group_info'])
     group_result=[]
@@ -36,7 +36,7 @@ def query_parent_group():
         group_no=group_no_info[key]
         group_item={"year":key, "group_no":group_no, "group_name":init.group_list[int(key)][group_no]}
         group_result.append(group_item)
-    return make_response(json.dumps(group_result, ensure_ascii=False), 200)    
+    return make_response(jsonify({"errorCode":0, "result":group_result}), 200)    
         
 
 
