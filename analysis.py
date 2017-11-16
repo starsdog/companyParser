@@ -2,6 +2,7 @@
 import csv
 import json
 import argparse
+import os
 from dbManager import dbManager 
 
 class companyAnalysis(object):
@@ -17,6 +18,10 @@ class companyAnalysis(object):
 
         self.dbManager=dbManager(self.config['db_config'])
             
+    def check_folder(self, folder_path):
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
     def parseThaubing(self):   
         input_handler=open(self.factory_corp, 'r')
         reader=csv.DictReader(input_handler)
@@ -84,7 +89,7 @@ class companyAnalysis(object):
             company_list=group['company_list']
 
             for company in company_list:
-                item={"company_name":company[0], "group_info":json.dumps({self.config['start']:group_no})}
+                item={"company_name":company[0], "group_infoq":json.dumps({self.config['start']:group_no})}
                 print(item)
                 if company[0] in stock_map:
                     item['stock']=stock_map[company[0]]
@@ -140,16 +145,27 @@ class companyAnalysis(object):
             group_company_list[group_no]=updated_company_list
         
         group_info_list=[]
+        group_name_list={}
         for group_no in group_company_list:
             group_info_item={"group_no":group_no, "company_list":group_company_list[group_no]}
             if group_no in group_stock:
                 group_info_item["group_name_list"]=list(group_stock[group_no])
             else:
                 group_info_item["group_name_list"]=[]    
-            group_info_list.append(group_info_item)        
+            group_info_list.append(group_info_item)   
+            group_name_list[group_no]=group_info_item["group_name_list"]
 
-        output_handler=open(self.config['groupInfo'], 'w')
+        file_name="groupInfo_{}.json".format(self.config['start'])
+        self.check_folder(self.config['groupInfo_folder'])
+        file_path=os.path.join(self.config['groupInfo_folder'], file_name)
+        output_handler=open(file_path, 'w')
         output_handler.write(json.dumps(group_info_list, ensure_ascii=False))
+        output_handler.close()        
+
+        file_name="groupName_{}.json".format(self.config['start'])
+        file_path=os.path.join(self.config['groupInfo_folder'], file_name)
+        output_handler=open(file_path, 'w')
+        output_handler.write(json.dumps(group_name_list, ensure_ascii=False))
         output_handler.close()        
 
 if __name__=="__main__":

@@ -56,6 +56,18 @@ class dbManager(object):
             if e.args[0]=='1062':
                 print("duplicate key")
         finally:
-            self.close()        
+            self.close()   
+
+    def query_parent(self, company_name):
+        self.connect()
+        try:
+            query_sql="select * from company_info where company_name=%(company_name)s"
+            self.cursor.execute(query_sql, {"company_name":company_name})
+            parent_info=self.cursor.fetchone()
+            return parent_info
+        except Exception as e:
+            raise
+        finally: 
+            self.close()           
             
 
