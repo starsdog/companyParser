@@ -111,8 +111,8 @@ desired effect
                 <table id="table_company" class="table table-bordered">
                 <thead>
                 <tr>
-                    <th >公司名稱</th>
                     <th >統一編號</th>
+                    <th >公司名稱</th>
                 </tr>
                 </thead>
                 </table>
@@ -129,16 +129,17 @@ desired effect
                 </table>
             </div>    
             <div id="thaubing_company_area" style="display: none">  
-                <table id="thaubing_group" class="table table-bordered" >
+                <table id="thaubing_company" class="table table-bordered" >
                 <thead>
                 <tr>
-                    <th >公司名稱</th>
                     <th >統一編號</th>
+                    <th >公司名稱</th>
+                    <th >是否有裁罰記錄</th>
                 </tr>
                 </thead>
                 </table>
             </div>
-            <div id="thaubing_fine_record_area" style="display: none">  
+            <div id="thaubing_record_area" style="display: none">  
                 <table id="thaubing_record" class="table table-bordered" >
                 <thead>
                 <tr>
@@ -178,6 +179,12 @@ desired effect
         group_table.init(table);
         var table = $('#table_company');
         company_table.init(table);
+        var table = $('#thaubing_group');
+        thaubing_group_table.init(table);
+        var table = $('#thaubing_company');
+        thaubing_company_table.init(table);
+        var table = $('#thaubing_record');
+        thaubing_record_table.init(table);
     }
 </script>        
 </body>

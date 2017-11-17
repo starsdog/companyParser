@@ -13,7 +13,7 @@ def download_relation_json():
 
     #get json data
     file_name="groupInfo_{}.json".format(year)
-    file_path=os.path.join(init.project_dir, file_name)
+    file_path=os.path.join(init.config['groupInfo_folder'], file_name)
     if not os.path.exists(file_path):
         return make_response("data not exist!", 400)
 

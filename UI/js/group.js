@@ -16,12 +16,16 @@ function CompanyItem(json){
     this.company_name=json ? json.name : null;
     this.taxcode=json ? json.taxcode : null;
     this.fine_record=json ? json.fine_record: null;
+    if (this.fine_record.length > 0)
+        this.has_fine_record=true;
+    else
+        this.has_fine_record=false;
 
     this.rawJSON = function () {
         return {
             'company_name': this.company_name,
             'taxcode': this.taxcode,
-            'fine_record': this.fine_record
+            'has_fine_record': this.has_fine_record
         }
     }
 
@@ -33,7 +37,7 @@ function FineRecordItem(json){
     this.penalty_money=json ? json.penalty_money: null;
     this.transgress_law=json ? json.transgress_law: null;
     this.is_petition=json ? json.is_petition: null;
-    this.petition_result=json ? json.petition_result: null;
+    this.petition_result=json ? json.petition_results: null;
 
     this.rawJSON = function () {
         return {
@@ -51,18 +55,25 @@ function FineRecordItem(json){
 function parseGroups(data) {
     var parsed_groups = [];
     var parsed_company = {};
+    var parsed_record = {};
     $.each(data, function (index, dict) {
         parsed_groups.push(new GroupItem(dict));
         var parsed_company_list =[];
         
-        $.each(dict['company_list'], function (index, array) {
-            parsed_company_list.push(new CompanyItem(array))
-        });   
+        $.each(dict['company_list'], function (index, dict) {
+            var parsed_record_list =[];
+            parsed_company_list.push(new CompanyItem(dict));
+            $.each(dict['fine_record'], function (index, dict) {
+                parsed_record_list.push(new FineRecordItem(dict))
+            });
+            parsed_record[dict['taxcode']]=parsed_record_list;    
+        });  
 
         parsed_company[dict['group_no']]=parsed_company_list;
+       
     });
 
-    return [parsed_groups, parsed_company];
+    return [parsed_groups, parsed_company, parsed_record];
 }
 
 var group_api={
@@ -73,21 +84,28 @@ var group_api={
         $('#company_name').val('');
         group_table.hide();
         company_table.hide();
+        thaubing_group_table.hide();
+        thaubing_company_table.hide();
+        thaubing_record_table.hide();
     },
 
     'query': function(){
         this.hideall();
         if ($('#relation_graph').is(":checked")){
-            console.log("go relation_graph")
-            this.query_list();
+            console.log("go relation_graph");
+            this.query_list(false);
         }
         else if ($('#relation_query').is(":checked")){
-            console.log("go relation_query")
+            console.log("go relation_query");
             $('#group_query_area').css('display','inline-block');
-        }    
+        } 
+        else if ($('#thaubing').is(":checked")){
+            console.log("go thaubing");
+            this.query_list(true);
+        } 
     },
 
-    'query_list':function(){
+    'query_list':function(with_fine_record){
         var year=$('#year').val();
         
         req_ajax({
@@ -96,13 +114,27 @@ var group_api={
                 "year": year
             },
             success: function(data){
-                result = parseGroups(data);
-                var group_table_element = $('#table_group');
-                group_table.groupItems=result[0];
-                company_table.companyItems=result[1];
-                group_table.loadData(group_table_element, result[0]);
-                group_table.show();
-                company_table.hide();
+                if (with_fine_record){
+                    result = parseGroups(data);
+                    var thaubing_group_element = $('#thaubing_group');
+                    thaubing_group_table.groupItems=result[0];
+                    thaubing_company_table.companyItems=result[1];
+                    thaubing_record_table.fineRecordItems=result[2];
+                    
+                    thaubing_group_table.loadData(thaubing_group_element, result[0]);
+                    thaubing_group_table.show();
+                    thaubing_company_table.hide();
+
+                }
+                else{
+                    result = parseGroups(data);
+                    var group_table_element = $('#table_group');
+                    group_table.groupItems=result[0];
+                    company_table.companyItems=result[1];
+                    group_table.loadData(group_table_element, result[0]);
+                    group_table.show();
+                    company_table.hide();
+                }
             },
             error: function (data) {
             }
@@ -149,20 +181,12 @@ var company_table={
         var _table = table.DataTable({
             autoWidth: false,
             columns: [
-                {data: "company_name"},
-                {data: "taxcode"}
+                {data: "taxcode"},
+                {data: "company_name"}
             ],
             order: [[0, 'asc']],
             dom: 'Bfrtlip',
-            columnDefs: [{
-                'targets': 0,
-                'searchable': true,
-                'orderable': true,
-                'width': '1%',
-                'render': function (data, type, full, meta) {
-                    return '<td class="sorting_1">'+data+'</td>';
-                }
-            }],
+            columnDefs: [],
             buttons:[{
                 text: "<i class='glyphicon glyphicon-menu-left'></i>回上頁" ,
                 action: function (e, dt, node, config) {
@@ -229,5 +253,135 @@ var group_table={
 
     'hide': function(){
         $('#table_group_area').css('display','none');
+    }
+}
+
+
+var thaubing_group_table={
+    'groupItems':[],
+
+    'init': function (table) {
+        var _table = table.DataTable({
+            autoWidth: false,
+            columns: [
+                {data: "group_no"},
+                {data: "group_name_list"},
+                {data: "has_fine_record"}
+            ],
+            order: [[2, 'desc']],
+            dom: 'Bfrtlip',
+            columnDefs: [{
+                'targets': 0,
+                'searchable': true,
+                'orderable': true,
+                'width': '1%',
+                'render': function (data, type, full, meta) {
+                    return '<td ><button class="btn btn-link" onclick="thaubing_company_table.loadData(\''+data+'\'); thaubing_company_table.show(); thaubing_group_table.hide(); return false">'+data+'</button></td>';
+                }
+            }],
+            buttons:[]
+        })    
+    },        
+
+    'loadData': function (table, data) {
+        table.DataTable().clear();
+        table.DataTable().rows.add(data).draw();
+    },
+
+    'show': function () {
+       $('#thaubing_group_area').css('display','inline-block');
+    },
+
+    'hide': function(){
+        $('#thaubing_group_area').css('display','none');
+    }
+}
+
+var thaubing_company_table={
+    'companyItems': {},
+    'table_element': $('#thaubing_company'),
+
+    'init': function (table) {
+        var _table = table.DataTable({
+            autoWidth: false,
+            columns: [
+                {data: "taxcode"},
+                {data: "company_name"},
+                {data: "has_fine_record"}
+            ],
+            order: [[2, 'desc']],
+            dom: 'Bfrtlip',
+            columnDefs: [{
+                'targets': 0,
+                'searchable': true,
+                'orderable': true,
+                'width': '1%',
+                'render': function (data, type, full, meta) {
+                        return '<td ><button class="btn btn-link" onclick="thaubing_record_table.loadData(\''+data+'\'); thaubing_record_table.show(); thaubing_company_table.hide(); return false">'+data+'</button></td>';
+                }
+            }],
+            buttons:[{
+                text: "<i class='glyphicon glyphicon-menu-left'></i>回上頁" ,
+                action: function (e, dt, node, config) {
+                    thaubing_company_table.hide();
+                    thaubing_group_table.show();
+                }
+            }]
+        })    
+    },      
+
+    'loadData': function (data) {
+        this.table_element.DataTable().clear();
+        this.table_element.DataTable().rows.add(this.companyItems[data]).draw();
+    },  
+
+    'show': function(){
+       $('#thaubing_company_area').css('display','inline-block');
+    },
+
+    'hide': function(){
+        $('#thaubing_company_area').css('display','none');
+    }
+}
+
+var thaubing_record_table={
+    'fineRecordItems': {},
+    'table_element': $('#thaubing_record'),
+
+    'init': function (table) {
+        var _table = table.DataTable({
+            autoWidth: false,
+            columns: [
+                {data: "facility_name"},
+                {data: "penalty_date"},
+                {data: "penalty_money"},
+                {data: "transgress_law"},
+                {data: "is_petition"},
+                {data: "petition_result"},
+            ],
+            order: [[1, 'desc']],
+            dom: 'Bfrtlip',
+            columnDefs: [],
+            buttons:[{
+                text: "<i class='glyphicon glyphicon-menu-left'></i>回上頁" ,
+                action: function (e, dt, node, config) {
+                    thaubing_record_table.hide();
+                    thaubing_company_table.show();
+                }
+            }]
+        })    
+    },      
+
+    'loadData': function (data) {
+        this.table_element.DataTable().clear();
+        this.table_element.DataTable().rows.add(this.fineRecordItems[data]).draw();
+    },  
+
+    'show': function(){
+       $('#thaubing_record_area').css('display','inline-block');
+    },
+
+    'hide': function(){
+        $('#thaubing_record_area').css('display','none');
     }
 }
