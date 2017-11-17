@@ -61,8 +61,8 @@ class dbManager(object):
     def query_parent(self, company_name):
         self.connect()
         try:
-            query_sql="select * from company_info where company_name=%(company_name)s"
-            self.cursor.execute(query_sql, {"company_name":company_name})
+            query_sql="select * from company_info where company_name like '%%{company_name}%%'".format(company_name=company_name)
+            self.cursor.execute(query_sql)
             parent_info=self.cursor.fetchone()
             return parent_info
         except Exception as e:
