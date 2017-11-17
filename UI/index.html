@@ -66,24 +66,43 @@ desired effect
                               <option value="2013">2013</option>
                             </select>  
                         </div>    
-                        <div>整合資訊：
-                            <label class="checkbox-inline"><input type="checkbox" value="relation_graph">企業關係下載與查詢</label>
-                            <label class="checkbox-inline"><input type="checkbox" value="thaubing">透明足跡(環保署) </label>
-                            <label class="checkbox-inline"><input type="checkbox" value="violate_rule">重大違規名單</label>
-                            <label class="checkbox-inline"><input type="checkbox" value="tax_discount">租稅減免</label>
-                            <label class="checkbox-inline"><input type="checkbox" value="legislator">立委金主</label>
+                        <div >整合資訊：
+                            <label class="checkbox-inline"><input type="checkbox" id="relation_graph">企業關係列表</label>
+                            <label class="checkbox-inline"><input type="checkbox" id="relation_query">企業關係查詢</label>
+                            <label class="checkbox-inline"><input type="checkbox" id="thaubing">透明足跡(環保署) </label>
+                            <label class="checkbox-inline"><input type="checkbox" id="violate_rule">重大違規名單</label>
+                            <label class="checkbox-inline"><input type="checkbox" id="tax_discount">租稅減免</label>
+                            <label class="checkbox-inline"><input type="checkbox" id="legislator">立委金主</label>
                         </div>                      	
         	    	</form>
                 </div>    
                 <button type="submit" class="btn btn-primary" onclick="group_api.query(); return false;">查詢</button>
                 
             </div>  
+            <div id="group_query_area" style="display: none">
+                <form role="form" action="#" id="query_form" >
+                    <label for="company_name">查詢公司名字:</label>
+                    <input type="text" class="form-control" id="company_name">
+                    <button type="submit" class="btn btn-primary" onclick="group_api.query_parent(); return false;">查詢</button>
+                </form>
+                <span id="query_error_msg"></span>
+                <table id="table_query" class="table table-bordered" >
+                <thead>
+                    <tr>
+                        <th >group_no</th>
+                        <th >group_name</th>
+                    </tr>
+                </thead>
+                <tbody id="table_query_body">
+                </tbody>
+                </table>
+            </div>
             <div id="table_group_area" style="display: none">  
                 <table id="table_group" class="table table-bordered" >
                 <thead>
                 <tr>
-                    <th >group_no</th>
-                    <th >group_name</th>
+                    <th >集團代號</th>
+                    <th >集團上市上櫃公司名稱</th>
                 </tr>
                 </thead>
                 </table>
@@ -92,13 +111,47 @@ desired effect
                 <table id="table_company" class="table table-bordered">
                 <thead>
                 <tr>
-                    <th >company_name</th>
-                    <th >taxcode</th>
+                    <th >公司名稱</th>
+                    <th >統一編號</th>
                 </tr>
                 </thead>
                 </table>
-           </div>      
-
+            </div>      
+            <div id="thaubing_group_area" style="display: none">  
+                <table id="thaubing_group" class="table table-bordered" >
+                <thead>
+                <tr>
+                    <th >集團代號</th>
+                    <th >集團上市上櫃公司名稱</th>
+                    <th >是否有裁罰記錄</th>
+                </tr>
+                </thead>
+                </table>
+            </div>    
+            <div id="thaubing_company_area" style="display: none">  
+                <table id="thaubing_group" class="table table-bordered" >
+                <thead>
+                <tr>
+                    <th >公司名稱</th>
+                    <th >統一編號</th>
+                </tr>
+                </thead>
+                </table>
+            </div>
+            <div id="thaubing_fine_record_area" style="display: none">  
+                <table id="thaubing_record" class="table table-bordered" >
+                <thead>
+                <tr>
+                    <th >工廠名稱</th>
+                    <th >裁罰日期</th>
+                    <th >裁罰金額</th>
+                    <th >違反法律</th>
+                    <th >是否請願</th>
+                    <th >請願結果</th>
+                </tr>
+                </thead>
+                </table>
+            </div>
 	</section>
         <!-- /.content -->
 </div>
