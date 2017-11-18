@@ -1,0 +1,129 @@
+#XBRL
+
+marketnamelist <- list.files('mops')
+
+foldernamelist <- lapply(2:5, function(x)
+  list.dirs(paste0('mops/', marketnamelist[x]), recursive = FALSE))
+  
+for (y in 1:4) {
+
+  assign(paste0('filenamelist.', y + 2012), lapply(1:4,function(x)
+    list.files(foldernamelist[[x]][y])))
+
+}
+
+groupdata <- list()
+all.error <- list()
+all.error.year <- list()
+
+for (yearloop in 1:4) {
+  
+  year <- yearloop + 2012
+  
+  for (folderloop in 1:4) {
+    
+    for (grouploop in 1:length(get(paste0('filenamelist.', year))[[folderloop]])){
+      
+      filelink <- paste(foldernamelist[[folderloop]][yearloop], '/', get(paste0('filenamelist.', year))[[folderloop]][grouploop], '/', get(paste0('filenamelist.', year))[[folderloop]][grouploop], '_', year, '.json', sep = '')
+      
+      check.filename <- list.files(paste0(foldernamelist[[folderloop]][yearloop], '/', get(paste0('filenamelist.', year))[[folderloop]][grouploop]))
+      
+    if (substr(check.filename[1], regexpr('_', check.filename[1]) + 1, regexpr('_', check.filename[1]) + 4) != year) {
+        
+        error.year <- data.frame(year, market = marketnamelist[folderloop + 1], stock = get(paste0('filenamelist.', year))[[folderloop]][grouploop])
+        all.error.year <- bind_rows(all.error.year, error.year)
+        
+      } else {
+        
+      if (length(fromJSON(filelink)$sublist) == 0) {
+        
+        error <- data.frame(year, market = marketnamelist[folderloop + 1], stock = get(paste0('filenamelist.', year))[[folderloop]][grouploop])
+        all.error <- bind_rows(all.error, error)
+        
+      } else {
+        
+        corp <- as.data.frame(fromJSON(filelink))
+        corp$sublist.table_source4 <- 0
+        corp$market <- marketnamelist[folderloop + 1]
+        groupdata <- rbind(groupdata, corp)  
+        
+      }
+      
+      }
+      
+    }
+    
+  }
+  
+  assign(paste0('groupdata.', year), groupdata)
+  
+  groupdata <- list()
+    
+}
+
+
+write.csv(all.error, 'error.csv')
+
+write.csv(all.error.year, 'year.error.csv')
+
+#董監事
+
+boardnamelist <- lapply(2:5, function(x)
+  list.files(paste0('mops/', marketnamelist[x]), include.dirs = FALSE))
+
+boardnamelist <- lapply(1:4, function(x)
+  boardnamelist[[x]][grep('board', boardnamelist[[x]])])
+
+all.boardlist <- list()
+
+for (yearloop in 1:4) {
+  
+  for (marketloop in 2:5) {
+    
+    boardlist <- read.csv(paste0('mops/', marketnamelist[marketloop], '/', boardnamelist[[marketloop - 1]][yearloop]))
+    
+
+    boardlist$year <- yearloop + 2012
+    boardlist$year <- as.factor(boardlist$year)
+    boardlist$market <- marketnamelist[marketloop]
+
+    colnames(boardlist) <- c('stock', 'sublist.source', 'sublist.target', 'totalboard', 'boardmember', 'totalsupervisor', 'supervisormember', 'year', 'market')
+
+    boardlist$sublist.is_coreSource <- 0
+    boardlist$sublist.table_source1 <- 0
+    boardlist$sublist.table_source2 <- 0
+    boardlist$sublist.table_source3 <- 0
+    boardlist$sublist.table_source4 <- 1
+        
+    all.boardlist <- bind_rows(all.boardlist, boardlist)
+  
+    }
+  
+  assign(paste0('boardlist.', yearloop + 2012), all.boardlist)
+  all.boardlist <- list()
+  
+}
+
+boardlist.2013$sublist.target[grepl('大成不', boardlist.2013$sublist.target[boardlist.2013$stock == '2027']) == TRUE & boardlist.2013$stock == '2027'] <- 
+  c('大成不鏽鋼工業股份有限公司')
+
+boardlist.2014$sublist.target[grepl('大成不', boardlist.2014$sublist.target[boardlist.2014$stock == '2027']) == TRUE & boardlist.2014$stock == '2027'] <- 
+  c('大成不鏽鋼工業股份有限公司')
+
+boardlist.2015$sublist.target[grepl('大成不', boardlist.2015$sublist.target[boardlist.2015$stock == '2027']) == TRUE & boardlist.2015$stock == '2027'] <- 
+  c('大成不鏽鋼工業股份有限公司')
+boardlist.2016$sublist.target[grepl('大成不', boardlist.2016$sublist.target[boardlist.2016$stock == '2027']) == TRUE & boardlist.2016$stock == '2027'] <- 
+  c('大成不鏽鋼工業股份有限公司')
+
+groupdata.2013 <- bind_rows(groupdata.2013, boardlist.2013[,c(1:3,8:14)])
+groupdata.2014 <- bind_rows(groupdata.2014, boardlist.2014[,c(1:3,8:14)])
+groupdata.2015 <- bind_rows(groupdata.2015, boardlist.2015[,c(1:3,8:14)])
+groupdata.2016 <- bind_rows(groupdata.2016, boardlist.2016[,c(1:3,8:14)])
+
+groupdata <- list()
+
+for (y in 1:4) {
+  
+  groupdata <- bind_rows(groupdata, get(paste0('groupdata.', y + 2012)))
+  
+}
