@@ -3,6 +3,17 @@ function GroupItem(json) {
     this.group_name_list = json ? json.group_name_list : null;
     this.has_fine_record = json ? json.has_fine_record : null;
     this.has_discount = json ? json.has_discount : false;
+    this.fine_money_amount =  json ? json.fine_money_amount : false;
+    this.fine_record_count =  json ? json.fine_record_count : false;
+    if (this.has_fine_record)
+        this.has_fine_record='v';
+    else
+        this.has_fine_record='';
+
+    if (this.has_discount)
+        this.has_discount='v';
+    else
+        this.has_discount='';
 
     this.rawJSON = function () {
         return {
@@ -17,19 +28,32 @@ function GroupItem(json) {
 function CompanyItem(json){
     this.company_name=json ? json.name : null;
     this.taxcode=json ? json.taxcode : null;
-    this.taxdiscount= json ? json.taxdiscount : false;
+    this.has_discount= json ? json.taxdiscount : false;
     this.fine_record=json ? json.fine_record: null;
-    if (this.fine_record.length > 0)
-        this.has_fine_record=true;
+    if ('{}' === JSON.stringify(this.fine_record)){
+        this.has_fine_record='';
+        this.fine_money_amount=0;
+        this.fine_record_count=0;
+    }
+    else{
+        this.has_fine_record='v';
+        this.fine_money_amount =  json ? json.fine_record.money_amount : false;
+        this.fine_record_count =  json ? json.fine_record.record_count: false;
+    }
+
+    if (this.has_discount)
+        this.has_discount='v';
     else
-        this.has_fine_record=false;
+        this.has_discount='';
 
     this.rawJSON = function () {
         return {
             'company_name': this.company_name,
             'taxcode': this.taxcode,
             'has_fine_record': this.has_fine_record, 
-            'taxdiscount': this.taxdiscount
+            'has_discount': this.has_discount,
+            "fine_money_amount": this.fine_money_amount,
+            "fine_record_count": this.fine_record_count
         }
     }
 
@@ -67,7 +91,7 @@ function parseGroups(data) {
         $.each(dict['company_list'], function (index, dict) {
             var parsed_record_list =[];
             parsed_company_list.push(new CompanyItem(dict));
-            $.each(dict['fine_record'], function (index, dict) {
+            $.each(dict['fine_record']['record'], function (index, dict) {
                 parsed_record_list.push(new FineRecordItem(dict))
             });
             parsed_record[dict['taxcode']]=parsed_record_list;    
@@ -326,7 +350,10 @@ var thaubing_group_table={
             columns: [
                 {data: "group_no"},
                 {data: "group_name_list"},
-                {data: "has_fine_record"}
+                {data: "has_fine_record"},
+                {data: "has_discount"},
+                {data: "fine_record_count"},
+                {data: "fine_money_amount"}
             ],
             order: [[2, 'desc']],
             dom: 'Bfrtlip',
@@ -367,7 +394,11 @@ var thaubing_company_table={
             columns: [
                 {data: "taxcode"},
                 {data: "company_name"},
-                {data: "has_fine_record"}
+                {data: "has_fine_record"},
+                {data: "has_discount"},
+                {data: "fine_record_count"},
+                {data: "fine_money_amount"}
+
             ],
             order: [[2, 'desc']],
             dom: 'Bfrtlip',
