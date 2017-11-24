@@ -61,6 +61,9 @@ desired effect
                 </div>
         	    <div class="box-body">
                     <form role="form" action="#" id="query_form" >
+                        <!--button type="submit" class="btn btn-primary" onclick="group_api.login(); return false;">login</button>
+                        <button type="submit" class="btn btn-primary" onclick="group_api.getMsg(); return false;">getMsg</button>
+                        <span id='test_msg'></span-->
                         <div>年份: 
                             <select id="year">
                               <option value="2013">2013</option>
@@ -153,6 +156,30 @@ desired effect
                 </thead>
                 </table>
             </div>
+            <div id="taxdiscount_group_area" style="display: none">  
+                <table id="taxdiscount_group" class="table table-bordered" >
+                <thead>
+                <tr>
+                    <th >集團代號</th>
+                    <th >集團上市上櫃公司名稱</th>
+                    <th >是否申請租稅優惠</th>
+                    <th >是否有裁罰記錄</th>
+                </tr>
+                </thead>
+                </table>
+            </div>    
+            <div id="taxdiscount_company_area" style="display: none">  
+                <table id="taxdiscount_company" class="table table-bordered" >
+                <thead>
+                <tr>
+                    <th >統一編號</th>
+                    <th >公司名稱</th>
+                    <th >是否申請租稅優惠</th>
+                    <th >是否有裁罰記錄</th>
+                </tr>
+                </thead>
+                </table>
+            </div>
 	</section>
         <!-- /.content -->
 </div>
@@ -185,6 +212,10 @@ desired effect
         thaubing_company_table.init(table);
         var table = $('#thaubing_record');
         thaubing_record_table.init(table);
+        var table = $('#taxdiscount_group');
+        taxdiscount_group_table.init(table);
+        var table = $('#taxdiscount_company');
+        taxdiscount_company_table.init(table);
     }
 </script>        
 </body>

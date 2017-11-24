@@ -4,13 +4,13 @@ import json
 import argparse
 import os
 from dbManager import dbManager 
+from openpyxl import load_workbook
 
 class companyAnalysis(object):
     def __init__(self, config_file):
         with open(config_file) as file:
             self.config = json.load(file)
 
-        self.factory_corp=self.config['factory']
         self.company_group=self.config['companyGroup']
         self.group_list=self.config['groupList']
         self.taxcode_list=self.config['taxcodeList']
@@ -77,8 +77,26 @@ class companyAnalysis(object):
         output_handler.write(json.dumps(taxcode_list, ensure_ascii=False))
         output_handler.close()
         
+    def generate_taxcode_ronny(self):
+        file_path=os.path.join(self.config['factory_folder'],'taxcode_index.csv')
+        input_handler=open(file_path, 'r')
+        reader=csv.DictReader(input_handler)
+
+        file_path=os.path.join(self.config['factory_folder'],'taxcode_index.json')
+        output_handler=open(file_path, 'w')
+
+        taxcode_list={}
+        for row in reader:
+            if row['type']=='公司':
+                taxcode_list[row['#id']]=row['name']
+
+        output_handler.write(json.dumps(taxcode_list, ensure_ascii=False))
+        output_handler.close()         
+
     def setup_company_db(self):
-        input_handler=open(self.config['groupInfo'], 'r')
+        file_name="groupInfo_{}.json".format(self.config['start'])
+        file_path=os.path.join(self.config['groupInfo_folder'], file_name)
+        input_handler=open(file_path, 'r')
         reader=json.load(input_handler)
 
         stock_input=open(self.config['stock_map'])
@@ -89,13 +107,65 @@ class companyAnalysis(object):
             company_list=group['company_list']
 
             for company in company_list:
-                item={"company_name":company[0], "group_infoq":json.dumps({self.config['start']:group_no})}
+                item={"company_name":company[0], "group_info":json.dumps({self.config['start']:group_no})}
                 print(item)
                 if company[0] in stock_map:
                     item['stock']=stock_map[company[0]]
                 self.dbManager.insert_company(item)    
 
+    def generate_factory_fine_list(self):
+        self.check_folder(self.config['factory_folder'])
+        file_path=os.path.join(self.config['factory_folder'],'taxcode_index.json')
+        input_handler=open(file_path, 'r')
+        taxcode_map=json.load(input_handler)
+        inv_taxcode={v:k for k, v in taxcode_map.items()}
+        
+        file_path=os.path.join(self.config['factory_folder'],'fine_corp.csv')
+        fine_handler=open(file_path, 'r')
+        reader=csv.DictReader(fine_handler)
 
+        factory_fine_list={}
+        for row in reader:
+            taxcode=row['corp_id']
+            if taxcode!='NULL':
+                if taxcode in factory_fine_list:
+                    factory_fine_list[taxcode].append(row)
+                else:
+                    factory_fine_list[taxcode]=[row]
+            else:
+                name=row['facility_name']  
+                if name in inv_taxcode:
+                    taxcode=inv_taxcode[name]
+                    if taxcode in factory_fine_list:
+                        factory_fine_list[taxcode].append(row)
+                    else:
+                        factory_fine_list[taxcode]=[row]         
+        
+        file_path=os.path.join(self.config['factory_folder'],'fine_corp.json')
+        output_handler=open(file_path, 'w')
+        output_handler.write(json.dumps(factory_fine_list, ensure_ascii=False))
+        output_handler.close()              
+
+    def generate_taxdiscount_list(self):
+        file_path=os.path.join(self.config['taxdiscount_folder'], '104discount.xlsx')
+        input_handler=load_workbook(file_path)
+        sheet_name_list=input_handler.get_sheet_names()
+
+        for sheet in sheet_name_list:
+            taxdiscount=set()
+            sheet_content=input_handler.get_sheet_by_name(sheet)
+            row_count=sheet_content.max_row
+            for index in range(2, row_count):
+                taxcode=sheet_content.cell(row=index, column=3).value
+                taxdiscount.add(taxcode)
+
+            sheet=int(sheet)+1911
+            filename='{}_discount.json'.format(sheet)
+            output_path=os.path.join(self.config['taxdiscount_folder'], filename)
+            output_handler=open(output_path, 'w')
+            output_handler.write(json.dumps(list(taxdiscount),ensure_ascii=False))
+            output_handler.close()
+            
     def generate_group_list(self):
         input_handler=open(self.company_group, 'r')
         reader=csv.DictReader(input_handler)
@@ -106,7 +176,16 @@ class companyAnalysis(object):
         stock_input=open(self.config['stock_map'])
         stock_map=json.load(stock_input)
         inv_stock={v:k for k, v in stock_map.items()}
-    
+
+        file_path=os.path.join(self.config['factory_folder'],'fine_corp.json')
+        fine_handler=open(file_path, 'r')
+        factory_fine_list=json.load(fine_handler)
+
+        taxdiscount_file="{}_discount.json".format(self.config['start'])
+        taxdiscount_path=os.path.join(self.config['taxdiscount_folder'], taxdiscount_file)
+        taxdiscount_handler=open(taxdiscount_path, 'r')
+        taxdiscount_list=json.load(taxdiscount_handler)
+
         group_company_list={}
         group_stock={}
         for row in reader:
@@ -137,17 +216,31 @@ class companyAnalysis(object):
                     group_stock[group_no].add(inv_stock[stock])   
                             
         for group_no in group_company_list:    
+            has_fine_record=False
+            has_discount=False
             company_list=list(group_company_list[group_no])
             updated_company_list=[]
             for company_name in company_list:
-                if company_name in taxcode_map:
-                    updated_company_list.append([company_name, taxcode_map[company_name]])
-            group_company_list[group_no]=updated_company_list
+                taxcode=taxcode_map[company_name]
+                item={"name":company_name, "taxcode":taxcode, "fine_record":[], "taxdiscount":False}
+                
+                if taxcode!='NA' and len(taxcode) and int(taxcode) in taxdiscount_list:
+                    item["taxdiscount"]=True
+                    has_discount=True
+                if taxcode in factory_fine_list:
+                    item["fine_record"]=factory_fine_list[taxcode]
+                    has_fine_record=True 
+                updated_company_list.append(item)
+
+            group_company_list[group_no]={"company_list":updated_company_list, "has_record":has_fine_record, "has_discount":has_discount}
         
         group_info_list=[]
         group_name_list={}
         for group_no in group_company_list:
-            group_info_item={"group_no":group_no, "company_list":group_company_list[group_no]}
+
+            group_info_item={"group_no":group_no, "company_list":group_company_list[group_no]['company_list'], 
+                "has_fine_record":group_company_list[group_no]['has_record'], 
+                "has_discount":group_company_list[group_no]['has_discount']}
             if group_no in group_stock:
                 group_info_item["group_name_list"]=list(group_stock[group_no])
             else:
@@ -166,7 +259,7 @@ class companyAnalysis(object):
         file_path=os.path.join(self.config['groupInfo_folder'], file_name)
         output_handler=open(file_path, 'w')
         output_handler.write(json.dumps(group_name_list, ensure_ascii=False))
-        output_handler.close()        
+        output_handler.close()      
 
 if __name__=="__main__":
     arg_parser = argparse.ArgumentParser()
@@ -192,5 +285,11 @@ if __name__=="__main__":
         analysis.generate_group_list() 
     elif task=='setup_company_db':
         analysis.setup_company_db()       
+    elif task=='generate_taxcode_ronny':
+        analysis.generate_taxcode_ronny()
+    elif task=='parse_factory_fine':
+        analysis.generate_factory_fine_list()
+    elif task=='generate_taxdiscount_list':
+        analysis.generate_taxdiscount_list()
     else:
         print("no match task")        

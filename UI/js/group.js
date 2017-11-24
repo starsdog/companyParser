@@ -2,12 +2,14 @@ function GroupItem(json) {
     this.group_no = json ? json.group_no : null;
     this.group_name_list = json ? json.group_name_list : null;
     this.has_fine_record = json ? json.has_fine_record : null;
+    this.has_discount = json ? json.has_discount : false;
 
     this.rawJSON = function () {
         return {
             'group_no': this.group_no,
             'group_name_list': this.group_name_list,
-            "has_fine_record": this.has_fine_record
+            "has_fine_record": this.has_fine_record,
+            "has_discount": this.has_discount
         }
     }
 }
@@ -15,6 +17,7 @@ function GroupItem(json) {
 function CompanyItem(json){
     this.company_name=json ? json.name : null;
     this.taxcode=json ? json.taxcode : null;
+    this.taxdiscount= json ? json.taxdiscount : false;
     this.fine_record=json ? json.fine_record: null;
     if (this.fine_record.length > 0)
         this.has_fine_record=true;
@@ -25,7 +28,8 @@ function CompanyItem(json){
         return {
             'company_name': this.company_name,
             'taxcode': this.taxcode,
-            'has_fine_record': this.has_fine_record
+            'has_fine_record': this.has_fine_record, 
+            'taxdiscount': this.taxdiscount
         }
     }
 
@@ -78,6 +82,34 @@ function parseGroups(data) {
 
 var group_api={
     
+    'login': function(){
+        req_ajax({
+            url: web_url+"/login",
+            data: {
+                "username": 'ling'
+            },
+            success: function(data){
+
+            },
+            error: function(data){
+
+            }    
+        })    
+    },
+
+    'getMsg': function(){
+        req_ajax_get({
+            url: web_url+"/getMsg",
+            success: function(data){
+                console.log(data);
+                $('#test_msg').text(data);
+            },
+            error: function(data){
+
+            }    
+        })    
+    },
+
     'hideall': function(){
         $('#group_query_area').css('display','none');
         $('#table_query_body').empty();
@@ -87,6 +119,8 @@ var group_api={
         thaubing_group_table.hide();
         thaubing_company_table.hide();
         thaubing_record_table.hide();
+        taxdiscount_group_table.hide();
+        taxdiscount_company_table.hide();
     },
 
     'query': function(){
@@ -103,6 +137,32 @@ var group_api={
             console.log("go thaubing");
             this.query_list(true);
         } 
+        else if ($('#tax_discount').is(":checked")){
+            this.query_discountlist(true);
+        }    
+    },
+
+    'query_discountlist':function(){
+         var year=$('#year').val();
+        
+        req_ajax({
+            url: web_url+"/group/list/query",
+            data: {
+                "year": year
+            },
+            success: function(data){
+                result = parseGroups(data);
+                var taxdiscount_group_element = $('#taxdiscount_group');
+                taxdiscount_group_table.groupItems=result[0];
+                taxdiscount_company_table.companyItems=result[1];
+                
+                taxdiscount_group_table.loadData(taxdiscount_group_element, result[0]);
+                taxdiscount_group_table.show();
+                taxdiscount_company_table.hide();
+            },    
+             error: function (data) {
+            }
+        }); 
     },
 
     'query_list':function(with_fine_record){
@@ -383,5 +443,87 @@ var thaubing_record_table={
 
     'hide': function(){
         $('#thaubing_record_area').css('display','none');
+    }
+}
+
+var taxdiscount_group_table={
+    'groupItems':[],
+
+    'init': function (table) {
+        var _table = table.DataTable({
+            autoWidth: false,
+            columns: [
+                {data: "group_no"},
+                {data: "group_name_list"},
+                {data: "has_discount"},
+                {data: "has_fine_record"}
+            ],
+            order: [[2, 'desc']],
+            dom: 'Bfrtlip',
+            columnDefs: [{
+                'targets': 0,
+                'searchable': true,
+                'orderable': true,
+                'width': '1%',
+                'render': function (data, type, full, meta) {
+                    return '<td ><button class="btn btn-link" onclick="taxdiscount_company_table.loadData(\''+data+'\'); taxdiscount_company_table.show(); taxdiscount_group_table.hide(); return false">'+data+'</button></td>';
+                }
+            }],
+            buttons:[]
+        })    
+    },        
+
+    'loadData': function (table, data) {
+        table.DataTable().clear();
+        table.DataTable().rows.add(data).draw();
+    },
+
+    'show': function () {
+       $('#taxdiscount_group_area').css('display','inline-block');
+    },
+
+    'hide': function(){
+        $('#taxdiscount_group_area').css('display','none');
+    }
+}
+
+var taxdiscount_company_table={
+    'companyItems': {},
+    'table_element': $('#taxdiscount_company'),
+
+    'init': function (table) {
+        var _table = table.DataTable({
+            autoWidth: false,
+            columns: [
+                {data: "taxcode"},
+                {data: "company_name"},
+                {data: "taxdiscount"},
+                {data: "has_fine_record"}
+            ],
+            order: [[2, 'desc']],
+            dom: 'Bfrtlip',
+            columnDefs: [
+            ],
+            buttons:[{
+                text: "<i class='glyphicon glyphicon-menu-left'></i>回上頁" ,
+                action: function (e, dt, node, config) {
+                    taxdiscount_company_table.hide();
+                    taxdiscount_group_table.show();
+                }
+            }]
+        })    
+    },      
+
+    'loadData': function (data) {
+        this.table_element.DataTable().clear();
+        this.table_element.DataTable().rows.add(this.companyItems[data]).draw();
+    },  
+
+    'show': function(){
+       $('#taxdiscount_company_area').css('display','inline-block');
+    },
+
+    'hide': function(){
+        $('#taxdiscount_company_area').css('display','none');
     }
 }
