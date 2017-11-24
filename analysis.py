@@ -22,7 +22,10 @@ class companyAnalysis(object):
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
-    def parseThaubing(self):   
+    def parseThaubing(self):  
+        '''
+        check coverage of fine_corp and group_realtion data
+        ''' 
         input_handler=open(self.factory_corp, 'r')
         reader=csv.DictReader(input_handler)
         factory_set=set()
@@ -56,7 +59,9 @@ class companyAnalysis(object):
         output_handler.close()
 
     def generate_taxcode_list(self):
-        input_handler=open(self.company_group, 'r')
+        file_name="groupdata.taxcode.{}.csv".format(self.config['start'])
+        file_path=os.path.join(self.company_group, file_name)
+        input_handler=open(file_path, 'r')
         reader=csv.DictReader(input_handler)
 
         taxcode_list={}
@@ -114,6 +119,9 @@ class companyAnalysis(object):
                 self.dbManager.insert_company(item)    
 
     def generate_factory_fine_list(self):
+        '''
+        transfrom fine_corp csv to find_corp.json
+        '''
         self.check_folder(self.config['factory_folder'])
         file_path=os.path.join(self.config['factory_folder'],'taxcode_index.json')
         input_handler=open(file_path, 'r')
@@ -129,24 +137,32 @@ class companyAnalysis(object):
             taxcode=row['corp_id']
             if taxcode!='NULL':
                 if taxcode in factory_fine_list:
-                    factory_fine_list[taxcode].append(row)
+                    factory_fine_list[taxcode]['record'].append(row)
+                    factory_fine_list[taxcode]['record_count']+=1
+                    factory_fine_list[taxcode]['money_amount']+=int(row['penalty_money'])
                 else:
-                    factory_fine_list[taxcode]=[row]
+                    factory_fine_list[taxcode]={"record_count":1, "money_amount":int(row['penalty_money']), "record":[row]}
             else:
                 name=row['facility_name']  
                 if name in inv_taxcode:
                     taxcode=inv_taxcode[name]
                     if taxcode in factory_fine_list:
-                        factory_fine_list[taxcode].append(row)
+                        factory_fine_list[taxcode]['record'].append(row)
+                        factory_fine_list[taxcode]['record_count']+=1
+                        factory_fine_list[taxcode]['money_amount']+=int(row['penalty_money'])
                     else:
-                        factory_fine_list[taxcode]=[row]         
+                        factory_fine_list[taxcode]={"record_count":1, "money_amount":int(row['penalty_money']), "record":[row]}        
         
+        print(factory_fine_list)
         file_path=os.path.join(self.config['factory_folder'],'fine_corp.json')
         output_handler=open(file_path, 'w')
         output_handler.write(json.dumps(factory_fine_list, ensure_ascii=False))
         output_handler.close()              
 
     def generate_taxdiscount_list(self):
+        '''
+        transform xlsx to json 
+        '''
         file_path=os.path.join(self.config['taxdiscount_folder'], '104discount.xlsx')
         input_handler=load_workbook(file_path)
         sheet_name_list=input_handler.get_sheet_names()
@@ -167,16 +183,21 @@ class companyAnalysis(object):
             output_handler.close()
             
     def generate_group_list(self):
-        input_handler=open(self.company_group, 'r')
+        file_name="groupdata.taxcode.{}.csv".format(self.config['start'])
+        file_path=os.path.join(self.company_group, file_name)
+        input_handler=open(file_path, 'r')
         reader=csv.DictReader(input_handler)
 
+        #taxcode map which generated from ronny data
         taxcode_input=open(self.taxcode_list, 'r')
         taxcode_map=json.load(taxcode_input)
 
+        #stock map which combine otc, pub, rotc, sii
         stock_input=open(self.config['stock_map'])
         stock_map=json.load(stock_input)
         inv_stock={v:k for k, v in stock_map.items()}
 
+        #fine_corp record not related with year
         file_path=os.path.join(self.config['factory_folder'],'fine_corp.json')
         fine_handler=open(file_path, 'r')
         factory_fine_list=json.load(fine_handler)
@@ -218,21 +239,25 @@ class companyAnalysis(object):
         for group_no in group_company_list:    
             has_fine_record=False
             has_discount=False
+            fine_money_amount=0
+            fine_record_count=0
             company_list=list(group_company_list[group_no])
             updated_company_list=[]
             for company_name in company_list:
                 taxcode=taxcode_map[company_name]
-                item={"name":company_name, "taxcode":taxcode, "fine_record":[], "taxdiscount":False}
+                item={"name":company_name, "taxcode":taxcode, "fine_record":{}, "taxdiscount":False}
                 
                 if taxcode!='NA' and len(taxcode) and int(taxcode) in taxdiscount_list:
                     item["taxdiscount"]=True
                     has_discount=True
                 if taxcode in factory_fine_list:
-                    item["fine_record"]=factory_fine_list[taxcode]
+                    item['fine_record']=factory_fine_list[taxcode]
+                    fine_money_amount+=factory_fine_list[taxcode]['money_amount']
+                    fine_record_count+=factory_fine_list[taxcode]['record_count']
                     has_fine_record=True 
                 updated_company_list.append(item)
 
-            group_company_list[group_no]={"company_list":updated_company_list, "has_record":has_fine_record, "has_discount":has_discount}
+            group_company_list[group_no]={"company_list":updated_company_list, "has_record":has_fine_record, "has_discount":has_discount, "fine_money_amount":fine_money_amount, "fine_record_count":fine_record_count}
         
         group_info_list=[]
         group_name_list={}
@@ -240,7 +265,8 @@ class companyAnalysis(object):
 
             group_info_item={"group_no":group_no, "company_list":group_company_list[group_no]['company_list'], 
                 "has_fine_record":group_company_list[group_no]['has_record'], 
-                "has_discount":group_company_list[group_no]['has_discount']}
+                "has_discount":group_company_list[group_no]['has_discount'], 
+                "fine_money_amount":group_company_list[group_no]['fine_money_amount'], "fine_record_count":group_company_list[group_no]['fine_record_count']}
             if group_no in group_stock:
                 group_info_item["group_name_list"]=list(group_stock[group_no])
             else:
