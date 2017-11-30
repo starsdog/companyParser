@@ -1,0 +1,277 @@
+chinadata <- list()
+
+marketnamelist <- list.files('mops')
+
+foldernamelist <- lapply(2:5, function(x)
+  list.dirs(paste0('mops/', marketnamelist[x]), recursive = FALSE))
+
+for (y in 1:length(foldernamelist)) {
+  
+  assign(paste0('filenamelist.', (y + 2012)), lapply(1:4, function(x)
+    list.files(foldernamelist[[x]][y])))
+  
+}
+
+for (yearloop in 1:4) {
+  
+  year <- yearloop + 2012
+  
+  assign(paste0('chinadata.', year), list())
+  
+  for (folderloop in 1:length(get(paste0('filenamelist.', year)))) {
+    
+    #for (fileloop in 1:length(get(paste0('filenamelist.', year))[[folderloop]])) {
+    
+    assign('chinadata',
+           lapply(1:length(get(paste0('filenamelist.', year))[[folderloop]]), function(x)
+             fromJSON(paste0(foldernamelist[[folderloop]][yearloop], '/', get(paste0('filenamelist.', year))[[folderloop]][x], '/',  get(paste0('filenamelist.', year))[[folderloop]][x], '_', year, '_china.json'))))
+    
+    assign(paste0('chinadata.', year), c(get(paste0('chinadata.', year)), chinadata))
+    
+    #}
+    
+  }
+  
+}
+
+groupdata$sublist.target[grep('福匠科技\\(深圳\\)有限公司\\(原名：福匠機械人科技\\(深圳\\)有限公司', groupdata$sublist.target)] <- c('福匠科技(深圳)有限公司(原名：福匠機械人科技(深圳)有限公司)')
+chinadata.2016[[grep('福匠科技\\(深圳\\)有限公司\\(原名：福匠機械人科技\\(深圳\\)有限公司', chinadata.2016)]]$sublist[,'target'][grep('福匠科技\\(深圳\\)有限公司\\(原名：福匠機械人科技\\(深圳\\)有限公司', chinadata.2016[[grep('福匠科技\\(深圳\\)有限公司\\(原名：福匠機械人科技\\(深圳\\)有限公司', chinadata.2016)]]$sublist[,'target'])] <- c('福匠科技(深圳)有限公司(原名：福匠機械人科技(深圳)有限公司)')
+chinadata.2015[[grep('福匠科技\\(深圳\\)有限公司\\(原名：福匠機械人科技\\(深圳\\)有限公司', chinadata.2015)]]$sublist[,'target'][grep('福匠科技\\(深圳\\)有限公司\\(原名：福匠機械人科技\\(深圳\\)有限公司', chinadata.2015[[grep('福匠科技\\(深圳\\)有限公司\\(原名：福匠機械人科技\\(深圳\\)有限公司', chinadata.2015)]]$sublist[,'target'])] <- c('福匠科技(深圳)有限公司(原名：福匠機械人科技(深圳)有限公司)')
+chinadata.2014[[grep('福匠科技\\(深圳\\)有限公司\\(原名：福匠機械人科技\\(深圳\\)有限公司', chinadata.2014)]]$sublist[,'target'][grep('福匠科技\\(深圳\\)有限公司\\(原名：福匠機械人科技\\(深圳\\)有限公司', chinadata.2014[[grep('福匠科技\\(深圳\\)有限公司\\(原名：福匠機械人科技\\(深圳\\)有限公司', chinadata.2014)]]$sublist[,'target'])] <- c('福匠科技(深圳)有限公司(原名：福匠機械人科技(深圳)有限公司)')
+chinadata.2013[[grep('福匠科技\\(深圳\\)有限公司\\(原名：福匠機械人科技\\(深圳\\)有限公司', chinadata.2013)]]$sublist[,'target'][grep('福匠科技\\(深圳\\)有限公司\\(原名：福匠機械人科技\\(深圳\\)有限公司', chinadata.2013[[grep('福匠科技\\(深圳\\)有限公司\\(原名：福匠機械人科技\\(深圳\\)有限公司', chinadata.2013)]]$sublist[,'target'])] <- c('福匠科技(深圳)有限公司(原名：福匠機械人科技(深圳)有限公司)')
+
+groupdata$sublist.target[grep('順德工業\\(江蘇\\)有限公司\\(以下簡稱順德工業', groupdata$sublist.target)] <- c('順德工業(江蘇)有限公司(以下簡稱順德工業)')
+chinadata.2016[[grep('順德工業\\(江蘇\\)有限公司\\(以下簡稱順德工業', chinadata.2016)]]$sublist[,'target'][grep('順德工業\\(江蘇\\)有限公司\\(以下簡稱順德工業', chinadata.2016[[grep('順德工業\\(江蘇\\)有限公司\\(以下簡稱順德工業', chinadata.2016)]]$sublist[,'target'])] <- c('順德工業(江蘇)有限公司(以下簡稱順德工業)')
+chinadata.2015[[grep('順德工業\\(江蘇\\)有限公司\\(以下簡稱順德工業', chinadata.2015)]]$sublist[,'target'][grep('順德工業\\(江蘇\\)有限公司\\(以下簡稱順德工業', chinadata.2015[[grep('順德工業\\(江蘇\\)有限公司\\(以下簡稱順德工業', chinadata.2015)]]$sublist[,'target'])] <- c('順德工業(江蘇)有限公司(以下簡稱順德工業)')
+
+groupdata$sublist.target[grep('東莞百一電子有限公司\\(原名東莞百榮通信設備有限公司', groupdata$sublist.target)] <- c('東莞百一電子有限公司(原名東莞百榮通信設備有限公司)')
+chinadata.2016[[grep('東莞百一電子有限公司\\(原名東莞百榮通信設備有限公司', chinadata.2016)]]$sublist[,'target'][grep('東莞百一電子有限公司\\(原名東莞百榮通信設備有限公司', chinadata.2016[[grep('東莞百一電子有限公司\\(原名東莞百榮通信設備有限公司', chinadata.2016)]]$sublist[,'target'])] <- c('東莞百一電子有限公司(原名東莞百榮通信設備有限公司)')
+chinadata.2015[[grep('東莞百一電子有限公司\\(原名東莞百榮通信設備有限公司', chinadata.2015)]]$sublist[,'target'][grep('東莞百一電子有限公司\\(原名東莞百榮通信設備有限公司', chinadata.2015[[grep('東莞百一電子有限公司\\(原名東莞百榮通信設備有限公司', chinadata.2015)]]$sublist[,'target'])] <- c('東莞百一電子有限公司(原名東莞百榮通信設備有限公司)')
+chinadata.2014[[grep('東莞百一電子有限公司\\(原名東莞百榮通信設備有限公司', chinadata.2014)]]$sublist[,'target'][grep('東莞百一電子有限公司\\(原名東莞百榮通信設備有限公司', chinadata.2014[[grep('東莞百一電子有限公司\\(原名東莞百榮通信設備有限公司', chinadata.2014)]]$sublist[,'target'])] <- c('東莞百一電子有限公司(原名東莞百榮通信設備有限公司)')
+chinadata.2013[[grep('東莞百一電子有限公司\\(原名東莞百榮通信設備有限公司', chinadata.2013)]]$sublist[,'target'][grep('東莞百一電子有限公司\\(原名東莞百榮通信設備有限公司', chinadata.2013[[grep('東莞百一電子有限公司\\(原名東莞百榮通信設備有限公司', chinadata.2013)]]$sublist[,'target'])] <- c('東莞百一電子有限公司(原名東莞百榮通信設備有限公司)')
+
+groupdata$sublist.target[grep('東莞欣訊 \\(\\(註2及註3\\)', groupdata$sublist.target)] <- c('東莞欣訊 (註2及註3)')
+chinadata.2016[[grep('東莞欣訊 \\(\\(註2及註3\\)', chinadata.2016)]]$sublist[,'target'][grep('東莞欣訊 \\(\\(註2及註3\\)', chinadata.2016[[grep('東莞欣訊 \\(\\(註2及註3\\)', chinadata.2016)]]$sublist[,'target'])] <- c('東莞欣訊 (註2及註3)')
+chinadata.2015[[grep('東莞欣訊 \\(\\(註2及註3\\)', chinadata.2015)]]$sublist[,'target'][grep('東莞欣訊 \\(\\(註2及註3\\)', chinadata.2015[[grep('東莞欣訊 \\(\\(註2及註3\\)', chinadata.2015)]]$sublist[,'target'])] <- c('東莞欣訊 (註2及註3)')
+chinadata.2014[[grep('東莞欣訊 \\(\\(註2及註3\\)', chinadata.2014)]]$sublist[,'target'][grep('東莞欣訊 \\(\\(註2及註3\\)', chinadata.2014[[grep('東莞欣訊 \\(\\(註2及註3\\)', chinadata.2014)]]$sublist[,'target'])] <- c('東莞欣訊 (註2及註3)')
+
+groupdata$sublist.target[grep('昆山宏訊醫療科技有限公司\\(原昆山宏訊電子科技', groupdata$sublist.target)] <- c('昆山宏訊醫療科技有限公司(原昆山宏訊電子科技)')
+chinadata.2016[[grep('昆山宏訊醫療科技有限公司\\(原昆山宏訊電子科技', chinadata.2016)]]$sublist[,'target'][grep('昆山宏訊醫療科技有限公司\\(原昆山宏訊電子科技', chinadata.2016[[grep('昆山宏訊醫療科技有限公司\\(原昆山宏訊電子科技', chinadata.2016)]]$sublist[,'target'])] <- c('昆山宏訊醫療科技有限公司(原昆山宏訊電子科技)')
+chinadata.2015[[grep('昆山宏訊醫療科技有限公司\\(原昆山宏訊電子科技', chinadata.2015)]]$sublist[,'target'][grep('昆山宏訊醫療科技有限公司\\(原昆山宏訊電子科技', chinadata.2015[[grep('昆山宏訊醫療科技有限公司\\(原昆山宏訊電子科技', chinadata.2015)]]$sublist[,'target'])] <- c('昆山宏訊醫療科技有限公司(原昆山宏訊電子科技)')
+
+groupdata$sublist.target[grep('上海昌永科技有限公司\\(原上海同永電子技術有限公司$', groupdata$sublist.target)] <- c('上海昌永科技有限公司(原上海同永電子技術有限公司)')
+chinadata.2016[[grep('上海昌永科技有限公司\\(原上海同永電子技術有限公司$', chinadata.2016)]]$sublist[,'target'][grep('上海昌永科技有限公司\\(原上海同永電子技術有限公司$', chinadata.2016[[grep('上海昌永科技有限公司\\(原上海同永電子技術有限公司$', chinadata.2016)]]$sublist[,'target'])] <- c('上海昌永科技有限公司(原上海同永電子技術有限公司)')
+chinadata.2015[[grep('上海昌永科技有限公司\\(原上海同永電子技術有限公司$', chinadata.2015)]]$sublist[,'target'][grep('上海昌永科技有限公司\\(原上海同永電子技術有限公司$', chinadata.2015[[grep('上海昌永科技有限公司\\(原上海同永電子技術有限公司$', chinadata.2015)]]$sublist[,'target'])] <- c('上海昌永科技有限公司(原上海同永電子技術有限公司)')
+chinadata.2014[[grep('上海昌永科技有限公司\\(原上海同永電子技術有限公司$', chinadata.2014)]]$sublist[,'target'][grep('上海昌永科技有限公司\\(原上海同永電子技術有限公司$', chinadata.2014[[grep('上海昌永科技有限公司\\(原上海同永電子技術有限公司$', chinadata.2014)]]$sublist[,'target'])] <- c('上海昌永科技有限公司(原上海同永電子技術有限公司)')
+chinadata.2013[[grep('上海昌永科技有限公司\\(原上海同永電子技術有限公司$', chinadata.2013)]]$sublist[,'target'][grep('上海昌永科技有限公司\\(原上海同永電子技術有限公司$', chinadata.2013[[grep('上海昌永科技有限公司\\(原上海同永電子技術有限公司$', chinadata.2013)]]$sublist[,'target'])] <- c('上海昌永科技有限公司(原上海同永電子技術有限公司)')
+
+chinalist <- unique(unlist(c(filenamelist.2013, filenamelist.2014, filenamelist.2015, filenamelist.2016)))
+
+for (csl in 1842:length(chinalist)) {
+  
+  #第一個表
+  
+  china.corp.table <- groupdata[groupdata$stock == chinalist[csl],]
+  china.corp.table <- china.corp.table[grep('再投資大陸公司', china.corp.table$sublist.source),]
+  china.corp.list <- china.corp.table$sublist.target
+  
+  if (nrow(china.corp.table) == 0) {
+    
+  } else {
+    
+    for (yearloop in 1:4) {
+      
+      year <- yearloop + 2012
+      
+      if (length(china.corp.list) == 0) {
+        
+        assign(paste0('china.corp.table.', year), list())
+        
+      } else {
+        
+        chinadata.stocklist <- unlist(lapply(1:length(get(paste0('chinadata.', year))), function(x)
+          get(paste0('chinadata.', year))[[x]]$stock))
+        
+        if (length(which(chinadata.stocklist == chinalist[csl])) == 0) {
+          
+          assign(paste0('china.corp.table.', year), list())
+          
+        } else {
+          
+          china.sub.table <- get(paste0('chinadata.', year))[[grep(chinalist[csl], chinadata.stocklist)]]$sublist
+          
+          if (length(china.sub.table) == 0) {
+            
+          } else {
+            
+            china.sub.table <- china.sub.table[unlist(lapply(china.corp.list, function(x) which(x == china.sub.table$target))),]
+            
+            assign(paste0('china.corp.table.', year), full_join(china.corp.table[china.corp.table$year == year,], china.sub.table, by = c('sublist.target' = 'target')))
+            assign(paste0('china.corp.table.', year), distinct(get(paste0('china.corp.table.', year))))
+            
+          }
+          
+        }
+        
+      }
+      
+    }
+    
+    china.corp.table <- china.corp.table.2016 %>%
+      bind_rows(china.corp.table.2015) %>%
+      bind_rows(china.corp.table.2014) %>%
+      bind_rows(china.corp.table.2013)
+    
+    china.corp.table$修正 <- c('')
+    china.corp.table <- china.corp.table[, colnames(china.corp.table)[c(1:3,17,4:16)]]
+    china.corp.table$問題 <- c('')
+    china.corp.table$刪除 <- c('')
+    
+    #write.csv(china.corp.table, paste0('chinacheck/', 'china', chinalist[csl], '.csv'))
+    
+    write.xlsx(china.corp.table, paste0('chinacheck/', 'china', chinalist[csl], '.xlsx'), showNA = FALSE, row.names=FALSE)
+    
+    china.corp.table.2013 <- list()
+    china.corp.table.2014 <- list()
+    china.corp.table.2015 <- list()
+    china.corp.table.2016 <- list()
+    
+    #第二張表
+    
+    china.compare.table <- groupdata[groupdata$stock == chinalist[csl],]
+    china.compare.table <- china.compare.table[-grep('再投資大陸公司', china.compare.table$sublist.source),]
+    china.compare.table <- china.compare.table[grep('china|不明', china.compare.table$sublist.location),]
+    
+    if (nrow(china.compare.table) == 0) {
+      
+      
+    } else {
+      
+      #write.csv(china.compare.table, paste0('chinacheck/', 'china.compare.', chinalist[csl], '.csv'))
+      
+      write.xlsx(china.compare.table, paste0('chinacheck/重複/', 'china.compare.', chinalist[csl], '.xlsx'), showNA = FALSE, row.names=FALSE)
+      
+      
+      #china.corp.table[(nrow(china.corp.table) + 3):(nrow(china.corp.table) + 3 + nrow(china.compare.table) - 1), ] <- china.compare.table  
+      
+    }
+    
+    
+    #第三張表
+    china.note.allyear <- list()
+    
+    for (yearloop in 1:4) {
+      
+      year <- yearloop + 2012
+      
+      china.year.position <- grep(chinalist[csl], lapply(1:length(get(paste0('chinadata.', year))), function(x) 
+        get(paste0('chinadata.', year))[[x]]$stock))
+      
+      if (length(china.year.position) == 0) {
+        
+        china.note <- list()
+        
+      } else {
+        
+        china.note <- data.frame(year = get(paste0('chinadata.', year))[[china.year.position]]$year, stock = get(paste0('chinadata.', year))[[china.year.position]]$stock)
+        
+        china.note$year <- as.character(china.note$year)
+        
+        china.note[2,1] <- c('備註')
+        
+        if (length(get(paste0('chinadata.', year))[[china.year.position]]$notelist) == 0) {
+          
+          china.note[nrow(china.note) + 1, 1] <- c('至http://mops.twse.com.tw/server-java/t164sb01查詢')
+          
+        } else {
+          
+          for (i in 1:length(get(paste0('chinadata.', year))[[china.year.position]]$notelist)){
+            
+            china.note[nrow(china.note) + 1, 1] <- get(paste0('chinadata.', year))[[china.year.position]]$notelist[i]
+            
+          }
+          
+          
+          
+        }
+        china.note[nrow(china.note) + 1,] <- NA
+        china.note.allyear <- bind_rows(china.note.allyear, china.note)
+        
+        }
+      
+      
+      
+    }
+    
+    #第四張表
+    
+    china.abbr.allyear <- list()
+    
+    for (yearloop in 1:4) {
+      
+      year <- yearloop + 2012
+      
+      if (length(grep(chinalist[csl], get(paste0('filenamelist.', year)))) == 0) {
+        
+        china.abbr.table <- list()
+        
+      } else {
+        
+        china.abbr.list <- fromJSON(paste0(foldernamelist[[grep(chinalist[csl], get(paste0('filenamelist.', year)))]][yearloop], '/', chinalist[csl], '/', chinalist[csl], '_', year, '_name.json'))
+        
+        if (is.matrix(china.abbr.list) == TRUE) {
+          
+          china.abbr.table <- as.data.frame(china.abbr.list)
+          
+        } else {
+          
+          abbr.table.row <- max(unlist(lapply(1:length(china.abbr.list), function(x)
+            length(china.abbr.list[[x]]))))
+          
+          china.abbr.table <- matrix(nrow=length(china.abbr.list), ncol=abbr.table.row)
+          
+          for (china.abbr in 1:nrow(china.abbr.table)) {
+            
+            china.abbr.table[china.abbr, 1:length(china.abbr.list[[china.abbr]])] <- china.abbr.list[[china.abbr]]
+            
+          }
+          
+        }
+        
+      }
+      china.abbr.table <- as.data.frame(china.abbr.table)
+      china.abbr.table[] <- lapply(china.abbr.table, as.character)
+      
+      china.abbr.allyear <- bind_rows(china.abbr.allyear, china.abbr.table)
+    }
+    
+    china.abbr.allyear <- distinct(china.abbr.allyear)
+    abbr.stock <- data.frame(V1 = chinalist[csl])
+    china.abbr.allyear <- bind_rows(abbr.stock, china.abbr.allyear)
+    
+    #合併第三及第四張表
+    
+    china.note.allyear[,3] <- NA
+    
+    if (nrow(china.note.allyear) >= nrow(china.abbr.allyear)) {
+      
+      
+    } else {
+      
+      china.note.allyear[nrow(china.note.allyear):nrow(china.abbr.allyear), ] <- NA
+      
+    }
+    
+    china.note.allyear[, 4:(3 + ncol(china.abbr.allyear))] <- NA
+    
+    china.note.allyear[1:nrow(china.abbr.allyear), 4:(3 + ncol(china.abbr.allyear))] <- china.abbr.allyear
+    
+    write.xlsx(china.note.allyear, paste0('chinacheck/備註/', '備註2_', chinalist[csl], '.xlsx'), showNA = FALSE, row.names=FALSE)
+    
+  }
+  
+  
+
+}
+
+
