@@ -61,12 +61,16 @@ desired effect
                 </div>
         	    <div class="box-body">
                     <form role="form" action="#" id="query_form" >
-                        <!--button type="submit" class="btn btn-primary" onclick="group_api.login(); return false;">login</button>
-                        <button type="submit" class="btn btn-primary" onclick="group_api.getMsg(); return false;">getMsg</button>
+                        <!--input name="account_avatar" type="file" class="jfilestyle-corner" id="account_avatar" accept=".jpg" required/>
+                        <button type="submit" class="btn btn-primary" onclick="group_api.upload(); return false;">upload</button-->
+                        <!--button type="submit" class="btn btn-primary" onclick="group_api.getMsg(); return false;">getMsg</button>
                         <span id='test_msg'></span-->
                         <div>年份: 
                             <select id="year">
                               <option value="2013">2013</option>
+                              <option value="2014">2014</option>
+                              <option value="2015">2015</option>
+                              <option value="2016">2016</option>
                             </select>  
                         </div>    
                         <div >整合資訊：
@@ -113,8 +117,10 @@ desired effect
                 <table id="table_company" class="table table-bordered">
                 <thead>
                 <tr>
-                    <th >統一編號</th>
-                    <th >公司名稱</th>
+                    <th >母公司統一編號</th>
+                    <th >母公司名稱</th>
+                    <th >子公司統一編號</th>
+                    <th >子公司名稱</th>
                 </tr>
                 </thead>
                 </table>
@@ -185,6 +191,10 @@ desired effect
                 </thead>
                 </table>
             </div>
+            <div id="relation_graph_area" style="display: none">
+                <button type="submit" class="btn btn-primary" onclick="company_table.show(); graph_area.hide(); return false;">回關係表格</button>
+                
+                <div id="relation_show" class="relation_graph"></div>
 	</section>
         <!-- /.content -->
 </div>

@@ -80,6 +80,23 @@ function FineRecordItem(json){
 
 }
 
+function RelationItem(json){
+    this.source=json ? json.source:null;
+    this.taxcode_source=json ? json.taxcode_source:null;
+    this.target=json ? json.target:null;
+    this.taxcode_target=json ? json.taxcode_target:null;
+
+    this.rawJSON = function () {
+        return {
+            'source': this.source,
+            'taxcode_source': this.taxcode_source,
+            "target": this.target,
+            "taxcode_target": this.taxcode_target
+        }
+    }
+
+}
+
 function parseGroups(data) {
     var parsed_groups = [];
     var parsed_company = {};
@@ -104,8 +121,47 @@ function parseGroups(data) {
     return [parsed_groups, parsed_company, parsed_record];
 }
 
+function parseGroupName(data) {
+    var parsed_groups = [];
+    $.each(data, function (index, dict) {
+        parsed_groups.push(new GroupItem(dict));   
+    });
+
+    return parsed_groups;
+}
+
+function parseCompanyName(data) {
+    var parsed_companys = [];
+    $.each(data, function (index, dict) {
+        parsed_companys.push(new RelationItem(dict));   
+    });
+
+    return parsed_companys;
+}
+
 var group_api={
     
+    'upload': function(){
+        var formData = new FormData();
+        formData.append('file', $("#account_avatar")[0].files[0]);
+        formData.append('account_id', 5);
+        $.ajax({
+            url: web_url+"/account/avatar/upload",
+            type: 'POST',
+            data:  formData,
+            mimeType:"multipart/form-data",
+            contentType: false,
+            cache: false,
+            processData:false,
+            success: function(data, textStatus, jqXHR){
+
+            },
+            error: function(jqXHR, textStatus, errorThrown){
+            
+            }
+        });        
+    },
+
     'login': function(){
         req_ajax({
             url: web_url+"/login",
@@ -151,7 +207,7 @@ var group_api={
         this.hideall();
         if ($('#relation_graph').is(":checked")){
             console.log("go relation_graph");
-            this.query_list(false);
+            this.query_group_list();
         }
         else if ($('#relation_query').is(":checked")){
             console.log("go relation_query");
@@ -159,7 +215,7 @@ var group_api={
         } 
         else if ($('#thaubing').is(":checked")){
             console.log("go thaubing");
-            this.query_list(true);
+            this.query_thaubinglist(true);
         } 
         else if ($('#tax_discount').is(":checked")){
             this.query_discountlist(true);
@@ -189,7 +245,7 @@ var group_api={
         }); 
     },
 
-    'query_list':function(with_fine_record){
+    'query_thaubinglist':function(with_fine_record){
         var year=$('#year').val();
         
         req_ajax({
@@ -253,6 +309,81 @@ var group_api={
 
             }
         }); 
+    },
+
+    'query_group_list':function(){
+        var year=$('#year').val();
+
+        req_ajax({
+            url: web_url+"/group/name/query",
+            data: {
+                "year": year
+            },
+            success: function(data){
+                result = parseGroupName(data);
+                var group_table_element = $('#table_group'); 
+                group_table.groupItems=result;
+                group_table.loadData(group_table_element, result);
+                group_table.show();
+            },
+            error: function (data) {
+            }
+        });           
+    },
+
+    'query_company':function(group_name){
+        var year=$('#year').val();
+
+        req_ajax({
+            url: web_url+"/group/companylist/query",
+            data: {
+                "group_name": group_name,
+                "year":year
+            },
+            success: function(data){
+                result = parseCompanyName(data);
+                var company_table_element = $('#table_company'); 
+                company_table.companyItems=result;
+                company_table.group_name=group_name;
+                company_table.year=year;
+                company_table.loadData(company_table_element, result);
+                company_table.show();
+            },
+            error: function (data) {
+
+
+            }
+        }); 
+
+    },
+
+    'download_group':function(){
+        var data=  {
+            "group_name": company_table.group_name,
+        };
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', web_url + '/group/download', true);
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = function () {
+            if (this.status === 401 || this.status === 502) {
+                var jsonResp = arraybufferToJSON(this.response);
+                this.responseJSON = jsonResp;
+
+                commonErrorHandler(this);
+            } else {
+                var blob = new Blob([this.response], {
+                    type: 'application/zip'
+                }),
+                link = $('<a></a>').attr({
+                    'download': company_table.group_name + '.zip',
+                    'href': window.URL.createObjectURL(blob)
+                }).appendTo('body');
+
+                link.get(0).click();
+                link.remove();
+            }
+        }
+        xhr.send(JSON.stringify(data));
     }    
 
 }
@@ -260,13 +391,17 @@ var group_api={
 var company_table={
     'companyItems': {},
     'table_element': $('#table_company'),
+    'group_name':'',
+    'year':2013,
 
     'init': function (table) {
         var _table = table.DataTable({
             autoWidth: false,
             columns: [
-                {data: "taxcode"},
-                {data: "company_name"}
+                {data: "taxcode_source"},
+                {data: "source"},
+                {data: "taxcode_target"},
+                {data: "target"}
             ],
             order: [[0, 'asc']],
             dom: 'Bfrtlip',
@@ -281,15 +416,26 @@ var company_table={
             {
                 text: "<i class='glyphicon glyphicon-download-alt'></i>下載zip" ,
                 action: function (e, dt, node, config) {
+                    group_api.download_group();
+                
+                }             
+            },
+            {
+                text: "<i class='glyphicon glyphicon-stats'></i>秀關係圖" ,
+                action: function (e, dt, node, config) {
+                    company_table.hide();
+                    group_table.hide();
+                    graph_area.submit();
+                    graph_area.show();
                 
                 }             
             }]
         })    
     },      
 
-    'loadData': function (data) {
-        this.table_element.DataTable().clear();
-        this.table_element.DataTable().rows.add(this.companyItems[data]).draw();
+    'loadData': function (table, data) {
+        table.DataTable().clear();
+        table.DataTable().rows.add(data).draw();
     },  
 
     'show': function(){
@@ -319,7 +465,7 @@ var group_table={
                 'orderable': true,
                 'width': '1%',
                 'render': function (data, type, full, meta) {
-                    return '<td ><button class="btn btn-link" onclick="company_table.loadData(\''+data+'\'); company_table.show(); group_table.hide(); return false">'+data+'</button></td>';
+                    return '<td ><button class="btn btn-link" onclick="group_api.query_company(\''+data+'\'); company_table.show(); group_table.hide(); return false">'+data+'</button></td>';
                 }
             }],
             buttons:[]

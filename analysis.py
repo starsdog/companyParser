@@ -11,9 +11,7 @@ class companyAnalysis(object):
         with open(config_file) as file:
             self.config = json.load(file)
 
-        self.company_group=self.config['companyGroup']
-        self.group_list=self.config['groupList']
-        self.taxcode_list=self.config['taxcodeList']
+        self.taxcode_index=self.config['taxcode_index']
         self.kind=self.config['kind']
 
         self.dbManager=dbManager(self.config['db_config'])
@@ -182,6 +180,10 @@ class companyAnalysis(object):
             output_handler.write(json.dumps(list(taxdiscount),ensure_ascii=False))
             output_handler.close()
             
+    def parse_violate_rule(self, filename):
+        input_handler=open(filename, 'r')
+        reader=csv.DictReader(input_handler)
+
     def generate_group_list(self):
         file_name="groupdata.taxcode.{}.csv".format(self.config['start'])
         file_path=os.path.join(self.company_group, file_name)
@@ -287,6 +289,84 @@ class companyAnalysis(object):
         output_handler.write(json.dumps(group_name_list, ensure_ascii=False))
         output_handler.close()      
 
+    def generate_group_company_folder(self, folder_path):
+        group_name_year={}
+        for dirPath, dirNames, fileNames in os.walk(folder_path):        
+                for f in fileNames:
+                    if '.csv' in f:
+                        sub_f=f[:-4]
+                        file_info=sub_f.split('_')
+                        group_name=file_info[0]
+                        year=file_info[1]
+                        file_path=os.path.join(dirPath, f)
+                        groupname_list=self.generate_group_company_list(file_path, group_name, year)
+                        item={"group_no":group_name, "group_name_list":groupname_list}
+                        if year in group_name_year:
+                            group_name_year[year].append(item)
+                        else:
+                            group_name_year[year]=[item]
+
+        for key in group_name_year:   
+            filename="groupName_{}.json".format(key)  
+            file_path=os.path.join(self.config['company_folder'], filename)
+            output_handler=open(file_path, 'w')
+            output_handler.write(json.dumps(group_name_year[key], ensure_ascii=False))
+            output_handler.close()        
+
+
+    def generate_group_company_list(self, file_path, group_name, year):
+        input_handler=open(file_path, 'r')
+        reader=csv.DictReader(input_handler)
+        
+        #stock map which combine otc, pub, rotc, sii
+        stock_input=open(self.config['stock_map'])
+        stock_map=json.load(stock_input)
+        inv_stock={v:k for k, v in stock_map.items()}
+
+        group_company_list=[]
+        company_set=set()
+        edgelist=[]
+        nodelist=[]
+        group_name_set=set()
+        for row in reader:
+            if row['sublist.holder']=='NA':
+                row['sublist.holder']=0
+            item={"source":row['source'],"target":row['target'], "taxcode_source":row['taxcode.source'], "taxcode_target":row['taxcode.target'], "holder":row['sublist.holder']}    
+            group_company_list.append(item) 
+            if row['source'] not in company_set:
+                company_set.add(row['source'])
+                nodelist.append({"name":row['source']})
+            if row['target'] not in company_set:
+                company_set.add(row['target'])
+                nodelist.append({"name":row['target']})
+
+            stock=int(row['stock'])
+            if stock in inv_stock:
+                group_name_set.add(inv_stock[stock])    
+
+        node_idx= {nodelist[i]['name']:i for i in range(len(nodelist))}
+        for info in group_company_list:
+            target_idx=node_idx[info['target']]   
+            source_idx=node_idx[info['source']]
+            owner_holder='%06f'%(float(info['holder'])*100)
+            item={"source":source_idx, "target":target_idx, "holder":owner_holder}
+            edgelist.append(item)
+
+        file_name="{}_{}_list.json".format(group_name, year)
+        file_path=os.path.join(self.config['company_folder'], group_name, file_name)
+        output_handler=open(file_path, 'w')
+        output_handler.write(json.dumps(group_company_list, ensure_ascii=False))
+        output_handler.close()      
+
+        reparsed_content={"y":year, "nodes":nodelist, "edges":edgelist}
+        file_name="{}_{}_graph.json".format(group_name, year)
+        file_path=os.path.join(self.config['company_folder'], group_name, file_name)
+        output_handler=open(file_path, "w")
+        output_handler.write(json.dumps(reparsed_content, ensure_ascii=False))
+        output_handler.close()
+
+        return list(group_name_set)
+    
 if __name__=="__main__":
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('-t', '--task', metavar='parse', type=str, nargs=1, required=True,
@@ -317,5 +397,11 @@ if __name__=="__main__":
         analysis.generate_factory_fine_list()
     elif task=='generate_taxdiscount_list':
         analysis.generate_taxdiscount_list()
+    elif task=='generate_group_company_list':
+        file_name="G1101_2013.csv"
+        file_path=os.path.join(project_config['company_folder'], 'G1101', file_name)
+        analysis.generate_group_company_list(file_name)    
+    elif task=='generate_group_company_folder':
+        analysis.generate_group_company_folder(project_config['company_folder'])
     else:
         print("no match task")        

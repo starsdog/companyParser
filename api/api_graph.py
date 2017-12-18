@@ -2,6 +2,7 @@
 from flask import request, jsonify, Blueprint, make_response, send_file
 import json
 import os
+import init
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
 mod = Blueprint('graph', __name__, url_prefix='graph')
@@ -9,15 +10,12 @@ mod = Blueprint('graph', __name__, url_prefix='graph')
 @mod.route('/download', methods=["POST"])
 def download_relation_json():
     info = request.get_json(force=True)
-    source=info['source']
-    uuid=str(info['uuid'])
-    is_for_graph=info['toGraph']
+    group=info['group']
+    year=info['year']
 
-    #get json data
-    if is_for_graph:            
-        source=source+'_show'
-    file_name="{}_2014.json".format(uuid)
-    file_path=os.path.join(root_dir, source, uuid, file_name)
+    file_name="{}_{}_graph.json".format(group, year)
+    file_path=os.path.join(init.config['company_folder'], group, file_name)
+
     if not os.path.exists(file_path):
         return make_response("data not exist!", 400)
 
