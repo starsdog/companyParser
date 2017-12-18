@@ -365,23 +365,16 @@ var group_api={
         xhr.open('POST', web_url + '/group/download', true);
         xhr.responseType = 'arraybuffer';
         xhr.onload = function () {
-            if (this.status === 401 || this.status === 502) {
-                var jsonResp = arraybufferToJSON(this.response);
-                this.responseJSON = jsonResp;
+            var blob = new Blob([this.response], {
+                type: 'application/octet-binary'
+            }),
+            link = $('<a></a>').attr({
+                'download': company_table.group_name + '.zip',
+                'href': window.URL.createObjectURL(blob)
+            }).appendTo('body');
 
-                commonErrorHandler(this);
-            } else {
-                var blob = new Blob([this.response], {
-                    type: 'application/zip'
-                }),
-                link = $('<a></a>').attr({
-                    'download': company_table.group_name + '.zip',
-                    'href': window.URL.createObjectURL(blob)
-                }).appendTo('body');
-
-                link.get(0).click();
-                link.remove();
-            }
+            link.get(0).click();
+            link.remove();
         }
         xhr.send(JSON.stringify(data));
     }    

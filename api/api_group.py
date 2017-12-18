@@ -10,30 +10,19 @@ import io
 
 mod = Blueprint('group', __name__, url_prefix='group')
 
-def gen_zip(folder_name, group_name):
+def gen_zip(folder_path, group_name):
 
-    file_name="{}".format(group_name)
-    zf = zipfile.ZipFile(file_name,'w')
-    for root, folders, files in os.walk(folder_name):
-        for sfile in files:
-            aFile = os.path.join(root, sfile)
-            zf.write(aFile)
-    zf.close()        
-
-def zip_gen(file_list):
-    zip_process = subprocess.Popen(['zip', '-r', '-j'] + file_list, stdout=subprocess.PIPE)
-
-    while not zip_process.poll():
-        line = zip_process.stdout.read()
-        if len(line)>0:
-            yield line
-        else:
-            zip_process.stdout.close()
-            break
-    try:
-        zip_process.wait(5) # Wait child process for at most 5 seoncds.
-    except subprocess.TimeoutExpired as e:
-        logger.error('Timeout: {}'.format(e.cmd))
+    file_name="{}.zip".format(group_name)
+    zip_folder=os.path.join(init.config['company_zip'], file_name)
+    zip_handler = zipfile.ZipFile(zip_folder,'w', zipfile.ZIP_DEFLATED)
+    for dirPath, dirNames, fileNames in os.walk(folder_path):
+        for f in fileNames:
+            if '.csv' in f or '.json' in f:
+                filename=os.path.join(dirPath, f)
+                base_folder=os.path.basename(dirPath)
+                output_folder=os.path.join(base_folder, f)
+                zip_handler.write(filename, output_folder)
+    zip_handler.close()        
 
 @mod.route('/list/query', methods=["POST"])
 def download_relation_json():
@@ -90,35 +79,15 @@ def download_group_zip():
     file_name="{}.zip".format(group_name)
     folder_path=os.path.join(init.config['company_folder'], group_name)
     if not os.path.exists(folder_path):
-        return make_response("data not exist!", 400)
+        return make_response("data not exist", 400)
 
-    file_path=os.path.join(init.config['company_folder'], file_name)
-
-    files=[]    
-    file_path=os.path.join(init.config['company_folder'], group_name, 'G1101_2013.csv')
-    memory_file = io.BytesIO()
-    files=[]    
-    with zipfile.ZipFile(memory_file, 'w') as zf:
-        for individualFile in files:
-            zf.write(individualFile)
-    memory_file.seek(0)        
-    return send_file(memory_file, attachment_filename=file_name, as_attachment=True)        
-
-    '''
-    files=[]    
-    file_path=os.path.join(init.config['company_folder'], group_name, 'G1101_2013.csv')
-    files.append(file_path)
-    zip_generator = zip_gen(files)
-    d = werkzeug.datastructures.Headers()
-    d.add(
-        'Content-Disposition',
-        'attachment',
-        filename='{}.zip'.format(group_name)
-        )
-    return Response(zip_generator, mimetype='application/octet-stream', headers=d)
-    '''
-
-    #send_file(zf, attachment_filename='{}.zip'.format(group_name), as_attachment=True)
+    file_path=os.path.join(init.config['company_zip'], file_name)
+    if not os.path.exists(file_path):
+        gen_zip(folder_path, group_name)
+        print("not exist {}".format(file_path))
+        return send_file(file_path, mimetype='zip')
+    else:
+        return send_file(file_path, mimetype='zip')   
     
 @mod.route('/parent/query', methods=["POST"])
 def query_parent_group():
