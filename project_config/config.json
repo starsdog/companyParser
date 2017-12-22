@@ -1,0 +1,65 @@
+{
+    "sii":{
+    	"xml_folder":"/Users/ling/Documents/company_2013/",
+    	"board_folder":"/Users/ling/Documents/board/board_2013/",
+    	"mops_folder":"/Users/ling/Documents/companyParser/mops_2013/",
+    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_sii.json",
+    	"check_board_list":[1592, 2069, 2236, 2239, 2361, 2437, 2739, 2936, 3321, 3474, 3598, 3708, 4190, 4438, 4552, 4555, 4557, 4733, 4763, 5284, 5288, 6286, 6422, 6431, 6449, 6451, 6452, 6456, 6464, 6477, 6525, 6531, 6533, 6702, 8442, 8463, 8464, 8466, 8467, 8473, 8480, 8481, 8488],
+    	"stock_map_missing_list":[]
+    },
+    
+    "otc":{
+    	"xml_folder":"/Users/ling/Documents/company_test/otc/",
+	    "board_folder":"/Users/ling/Documents/otc_board_2013/",
+	    "mops_folder":"/Users/ling/Documents/companyParser/otc_mops_2013/",
+    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_otc.json",
+    	"check_board_list":[2726, 2740, 2928, 3426, 3658, 3707, 4554, 4556, 4762, 4803, 4804, 4806, 5276, 5281, 5284, 5384, 5395, 5543, 6022, 6457, 6462, 6469, 6470, 6482, 6485, 6486, 6488, 6494, 6496, 6497, 6499, 6510, 6514, 6523, 6532, 6535, 6538, 6542, 6548, 6554, 6568, 6569, 8266, 8437, 8455, 8462, 8472, 8477, 8925],
+    	"board_missing_list":[8050],
+    	"stock_map_missing_list":[1558, 3266, 5505, 3582, 5261, 5326, 5266],
+    	"missing_stock_map_json":"/Users/ling/Documents/companyParser/stock_map_otc2.json"
+    },
+    
+    "rotc":{
+    	"xml_folder":"/Users/ling/Documents/rotc_2013/",
+	    "board_folder":"/Users/ling/Documents/rotc_board_2013/",
+	    "mops_folder":"/Users/ling/Documents/companyParser/rotc_mops_2013/",
+    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_rotc.json",
+    	"check_board_list":[1268, 1269, 1818, 2070, 2245, 2738, 2739, 2743, 2745, 2749, 2937, 2938, 3318, 3391, 4136, 4438, 4554, 4559, 4563, 4564, 4565, 4566, 4764, 4766, 4802, 4807, 5238, 6453, 6467, 6468, 6472, 6473, 6475, 6479, 6481, 6486, 6489, 6490, 6491, 6492, 6495, 6498, 6511, 6518, 6529, 6534, 6536, 6538, 6539, 6540, 6541, 6546, 6550, 6551, 6553, 6555, 6556, 6558, 6559, 6565, 6566, 6567, 6570, 6572, 6575, 6576, 6578, 6579, 6581, 6583, 6584, 6585, 6588, 6591, 6593, 6596, 6598, 6612, 6613, 6615, 6617, 6620, 6622, 6624, 6625, 6626, 6627, 6633, 6637, 6638, 6640, 7421, 7443, 8065, 8197, 8281, 8478, 8491, 8492, 8495, 8497],
+    	"board_missing_list":[5216, 5240],
+    	"stock_map_missing_list":[2641, 8454, 4551, 4555, 8027, 2732, 5878, 5279, 1598, 4116, 4147, 4171, 4174, 4198, 4734, 4740, 4181, 3437, 3666, 6419, 6404, 3127, 8450],
+    	"missing_stock_map_json":"/Users/ling/Documents/companyParser/stock_map_rotc2.json"
+    },
+
+    "pub":{
+    	"xml_folder":"/Users/ling/Documents/pub_2013/",
+	    "board_folder":"/Users/ling/Documents/pub_board_2013/",
+	    "mops_folder":"/Users/ling/Documents/companyParser/pub_mops_2013/",
+    	"stock_map_json":"/Users/ling/Documents/companyParser/stock_map_pub.json",
+    	"check_board_list":[1267, 1269, 1547, 1555, 1757, 2112, 2240, 2243, 2341, 2361, 2584, 2589, 2749, 2936, 2938, 3074, 3127, 3282, 3307, 3318, 3375, 3411, 3524, 3568, 3657, 4115, 4181, 4566, 4731, 4734, 4740, 4749, 4767, 4941, 4990, 4997, 5235, 5238, 5242, 5253, 5257, 5395, 5605, 6211, 6250, 6406, 6436, 6458, 6466, 6474, 6476, 6478, 6484, 6517, 6526, 6543, 6561, 6563, 6585, 6587, 6593, 6595, 6601, 6614, 6622, 6632, 6638, 6661, 8065, 8264, 8445, 8469, 8483, 8497, 8958],
+    	"board_missing_list":[5250, 6211, 4997, 5253, 6406, 5257, 6250, 4941, 5235, 5238, 5242, 4990],
+    	"stock_map_missing_list":[4557, 4140, 4763, 3423, 3496, 3503, 3565, 4801, 4931, 5282, 5293, 6433, 4804, 5858, 5876, 6431, 8419, 648],
+    	"missing_stock_map_json":"/Users/ling/Documents/companyParser/stock_map_pub2.json"
+    },
+
+    "zip_folder":"/Users/ling/Documents/zip/",
+    
+    "target":[],
+    "start":2013,
+    "end":2013,
+
+    "kind":"sii",
+    "kind_list":["sii", "otc"],
+
+    "factory_folder":"/Users/ling/Documents/companyParser/thaubing",
+    "taxdiscount_folder":"/Users/ling/Documents/companyParser/taxdiscount",
+    "company_folder":"/Users/ling/Documents/companyParser/group_relation",
+    "taxcode_index":"/Users/ling/Documents/companyParser/thaubing/taxcode_index.json",
+    "stock_map":"/Users/ling/Documents/companyParser/stock_map.json", 
+
+    "db_config":{
+        "host":"127.0.0.1",
+        "user":"tool",
+        "password":"tool",
+        "database":"company_relation"
+    }
+}    

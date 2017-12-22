@@ -32,6 +32,7 @@ class companyNode(object):
             #for key in config.keys():
             #    setattr(self, key, config[key])
         kind=self.config['kind']
+        
         self.xml_folder=self.config[kind]['xml_folder']
         self.board_folder=self.config[kind]['board_folder']
         self.mops_folder=self.config[kind]['mops_folder']
@@ -281,8 +282,6 @@ class companyNode(object):
         else:
             company_header='{http://www.xbrl.org/tifrs/notes/'+str(year)+'-03-31}'
 
-
-        print("{},{}".format(stock, company_header))
         #table1: 列入合併財務報表之子公司
         target_element=company_header+'TheConsolidatedEntities'
         sublist=[]
@@ -294,7 +293,6 @@ class companyNode(object):
         #    print("{}".format(item.tag))
 
         target_list=content.findall(target_element)
-        print(len(target_list))
         for target in target_list:
             for child in target:
                 if 'CompanyNameOfTheInvestor' in child.tag:
@@ -507,6 +505,7 @@ class companyNode(object):
 
         json_output['sublist']=sublist
         output_folder=os.path.join(self.mops_folder, str(stock))
+        #print(output_folder)
         self.check_folder(output_folder)
         filename='{}_{}.json'.format(str(stock), str(year))
         file_path=os.path.join(output_folder, filename)
@@ -566,12 +565,11 @@ class companyNode(object):
                 target_list=['01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','XX','97', '98','99' ]
             elif kind=='rotc':
                 target_list=['02','03','04','05','06','07','08','10','11','14','15','16','17','18','20','21', '22','23', '24','25','26','27','28','29','30','31','32','33' ]
-                #target_list=['22','23', '24','25','26','27','28','29','30','31','32','33' ]
             elif kind=='otc':
                 target_list=['02','03','04','05','06','07','08','10','11','14','15','16','17','18','20','21','22','23','24','25','26','27','28','29','30','31','32','33','80','91']
             elif kind=='sii':
                 target_list=['01','02','03','04','05','06','07','08','09','10','11','12','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','91']
-
+                
             for target in target_list:
                 #payload='encodeURIComponent=1&step=1&firstin=true&MAR_KIND='+kind+'&CODE='+target+'&SYEAR='+str(year)+'&SSEASON=01&REPORT_ID=C'
                 #url='http://mops.twse.com.tw/mops/web/ajax_t164sb02/server-java/FileDownLoad'
@@ -686,9 +684,9 @@ class companyNode(object):
         output.close()
 
     def parse_folder(self, stock_map):
+        print("Now, we are paring {}".format(self.xml_folder))
         keyError_list=[]
         try:
-            print(self.xml_folder)
             for dirPath, dirNames, fileNames in os.walk(self.xml_folder):        
                 for f in fileNames:
                     if '.xml' in f:
@@ -704,7 +702,8 @@ class companyNode(object):
             print(filename)
             print(traceback.format_exc())     
 
-        print(keyError_list)               
+        if len(keyError_list):
+            print("We can't find some stock in stock_map, missing stock={}".format(keyError_list))               
 
     def download_board(self, stock_map, year, check_exist=True):
         for stock in stock_map:
@@ -774,8 +773,9 @@ class companyNode(object):
 
     def parse_board_folder(self, stock_map):
         output_file=os.path.join(self.board_folder, 'board.csv')
-        output_handler=open(output_file, 'a')
+        output_handler=open(output_file, 'w')
         writer=csv.DictWriter(output_handler, fieldnames=['stock','source','target','totalboard','boardnumber','totalsupervisor','supervisornumber'])
+        writer.writeheader()
         fail_stock=[]
         for dirPath, dirNames, fileNames in os.walk(self.board_folder):        
             for f in fileNames:
@@ -791,7 +791,7 @@ class companyNode(object):
                         for item in result_list:
                             writer.writerow(item)
         output_handler.close()  
-        print(fail_stock)              
+        print("parse_board_folder complete, fail_stock={}".format(fail_stock))              
 
     def check_board_status(self, stock_map):
         input_file=os.path.join(self.board_folder, 'board.csv')
@@ -804,9 +804,14 @@ class companyNode(object):
         target_stock=set(stock_map.keys())
         unfinished=target_stock-done_stock
         unfinished_json={k:stock_map[k] for k in unfinished}
-        output_handler=open("stock_map_v3.json", 'w')
-        output_handler.write(json.dumps(unfinished_json, ensure_ascii=False))
-        output_handler.close()
+
+        if len(unfinished):
+            output_handler=open("board_missing.json", 'w')
+            output_handler.write(json.dumps(unfinished_json, ensure_ascii=False))
+            output_handler.close()
+            print("There are some missing stock in board={}".format(unfinished_json))
+        else:
+            print("Every stock is finished!")    
 
     def check_board_fail_reason(self):
         no_data=[]
@@ -830,12 +835,11 @@ class companyNode(object):
                     no_publish.append(item)    
                 if '已下市' in target_list[0].text: 
                     no_publish.append(item)      
-        print(no_data)
-        print(no_publish)
+        print("查無資料={}".format(no_data))
+        print("不繼續公開發行={}".format(no_publish))
         unknown=list(set(self.check_board_list)-set(no_data)-set(no_publish))
-        print(unknown)            
+        print("其他原因={}".format(unknown))          
 
-    
     def parse_missing_stock_name(self, year):
         missing_stock_map={}
         for dirPath, dirNames, fileNames in os.walk(self.xml_folder):        
@@ -901,7 +905,9 @@ class companyNode(object):
                 inv_stock[key]=name
             else:
                 fail_stock.append(key)
-        print(fail_stock) 
+        
+        if len(fail_stock):
+            print("parse_stock_name fail={}".format(fail_stock))
         return inv_stock
 
     def parse_stock_list(self):
@@ -912,7 +918,7 @@ class companyNode(object):
                     f_parts=f.split('-')
                     stock=int(f_parts[5])     
                     stock_list[stock]=""
-        print(stock_list)
+        
         return stock_list   
 
     def check_parser_reuslt(self, sublist):
@@ -940,23 +946,32 @@ class companyNode(object):
 
         return check_result             
         
-
-
 if __name__=="__main__":
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('-t', '--task', metavar='parse', type=str, nargs=1, required=True,
         help='Specify a task to do. (parse)')
+    arg_parser.add_argument('-c', '--config', metavar='config.json', type=str, nargs=1, required=True,
+        help='Specify a config file')
 
     args = arg_parser.parse_args()
 
     if args.task!=None:
         task=args.task[0]
 
-    with open('config.json') as file:
+    if args.config!=None:
+        config_name=args.config[0]  
+    else:
+        config_name='config.json'      
+
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+    config_file = project_dir + '/project_config/'+ config_name  
+    
+    with open(config_file) as file:
         project_config=json.load(file)
         
     kind=project_config['kind']
-    print(kind)
+    kind_list=project_config['kind_list']
+    
     with open(project_config[kind]['stock_map_json']) as file:
         stock = json.load(file)
 
@@ -970,7 +985,7 @@ if __name__=="__main__":
             print("can't find stock number of {}".format(t))
 
     year=project_config['start']
-    parser=companyNode('config.json') 
+    parser=companyNode(config_file) 
     if task=='parse':
         for key in stock_dict.keys():
             parser.parse_xml(stock_dict[key], 2014, key)
@@ -986,11 +1001,15 @@ if __name__=="__main__":
     elif task=='parse_folder':
         parser.parse_folder(inv_stock)
     elif task=='download_board':
-        parser.download_board(inv_stock, project_config['start'])
+        file_path=os.path.join(project_config[kind]['board_folder'], 'stock_list.json')
+        with open(file_path) as file:
+            inv_stock = json.load(file)
+        parser.download_board(inv_stock, project_config['start'])    
     elif task=='parse_board':
         result_list=parser.parse_board(1592, 2016, inv_stock[1592])
         print(result_list)
     elif task=='parse_board_folder':
+        parser.download_board(inv_stock, project_config['start'])
         parser.parse_board_folder(inv_stock)   
     elif task=='check_board_status':
         parser.check_board_status(inv_stock)
@@ -999,16 +1018,22 @@ if __name__=="__main__":
     elif task=='download_missing_board':
         parser.download_board(project_config[kind]['board_missing_list'], project_config['start'], check_exist=False)
     elif task=='parse_stock_name':
-        new_inv_stock=parser.parse_stock_name(stock, project_config['start'])
+        file_path=os.path.join(project_config[kind]['board_folder'], 'stock_list.json')
+        with open(file_path) as file:
+            inv_stock = json.load(file)
+        new_inv_stock=parser.parse_stock_name(inv_stock, project_config['start'])
         new_stock={v:int(k) for k, v in new_inv_stock.items()}  
         output_handler=open(project_config[kind]['stock_map_json'], 'w')
         output_handler.write(json.dumps(new_stock, ensure_ascii=False))
         output_handler.close()
     elif task=='download_category_xml': 
-        parser.download_xml_by_category(project_config['start'],project_config['kind'])
+        for kind in kind_list:
+            parser.download_xml_by_category(project_config['start'],kind)
     elif task=='parse_stock_list':
         stock_list=parser.parse_stock_list()
-        output_handler=open(project_config[kind]['stock_map_json'], 'w')
+
+        file_path=os.path.join(project_config[kind]['board_folder'], 'stock_list.json')
+        output_handler=open(file_path, 'w')
         output_handler.write(json.dumps(stock_list, ensure_ascii=False))
         output_handler.close()
     elif task=='parse_missing_stock_name':
