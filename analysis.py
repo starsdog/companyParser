@@ -323,11 +323,16 @@ class companyAnalysis(object):
         stock_map=json.load(stock_input)
         inv_stock={v:k for k, v in stock_map.items()}
 
+        group_detail_info={}
         group_company_list=[]
         company_set=set()
         edgelist=[]
         nodelist=[]
         group_name_set=set()
+        group_penalty_amount=0
+        group_has_fine=False
+        group_fine_num=0
+        location_map={}
         for row in reader:
             if row['sublist.holder']=='NA':
                 row['sublist.holder']=0
@@ -335,14 +340,38 @@ class companyAnalysis(object):
             group_company_list.append(item) 
             if row['source'] not in company_set:
                 company_set.add(row['source'])
-                nodelist.append({"name":row['source']})
+                #nodelist.append({"name":row['source']})
+
             if row['target'] not in company_set:
                 company_set.add(row['target'])
-                nodelist.append({"name":row['target']})
+                #nodelist.append({"name":row['target']})
+
+            location_map[row['target']]=row['sublist.location']    
 
             stock=int(row['stock'])
             if stock in inv_stock:
-                group_name_set.add(inv_stock[stock])    
+                group_name_set.add(inv_stock[stock])
+
+            if company['taxcode_source']!='NA':
+                has_fine, penalty_money_source, record_num=self.dbManager.query_fine_record_by_taxcode(company['taxcode_source'])
+                if has_fine:
+                    group_has_fine=True
+                    group_penalty_amount += penalty_money_source
+                    group_fine_num+=record_num
+            if company['taxcode_target']!='NA':
+                has_fine, penalty_money_targetm, record_num=self.dbManger.query_fine_record_by_taxcode(company['taxcode_target'])       
+                if has_fine:
+                    group_has_fine=True
+                    group_penalty_amount += penalty_money_target
+                    group_fine_num+=record_num
+                   
+        for company in company_set:
+            if company in location_map:
+                location=location_map[company]
+            else:
+                location='不明'
+                print("{}".format(company))
+            nodelist.append({"name":company, "location":location})
 
         node_idx= {nodelist[i]['name']:i for i in range(len(nodelist))}
         for info in group_company_list:
@@ -352,13 +381,16 @@ class companyAnalysis(object):
             item={"source":source_idx, "target":target_idx, "holder":owner_holder}
             edgelist.append(item)
 
+        group_detail_info['company_summery']={"company_amount":len(list(company_set)), "has_fine":group_has_fine, "fine_record_num":group_fine_num, "fine_penalty_amount":group_penalty_amount}
+        group_detail_info['company_list']=group_company_list    
+        
         file_name="{}_{}_list.json".format(group_name, year)
         file_path=os.path.join(self.config['company_folder'], group_name, file_name)
         output_handler=open(file_path, 'w')
-        output_handler.write(json.dumps(group_company_list, ensure_ascii=False))
+        output_handler.write(json.dumps(group_detail_info, ensure_ascii=False))
         output_handler.close()      
 
-        reparsed_content={"y":year, "nodes":nodelist, "edges":edgelist}
+        reparsed_content={"y":year, "nodes":nodelist, "links":edgelist}
         file_name="{}_{}_graph.json".format(group_name, year)
         file_path=os.path.join(self.config['company_folder'], group_name, file_name)
         output_handler=open(file_path, "w")
@@ -371,13 +403,23 @@ if __name__=="__main__":
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('-t', '--task', metavar='parse', type=str, nargs=1, required=True,
         help='Specify a task to do. (parse)')
+    arg_parser.add_argument('-c', '--config', metavar='config.json', type=str, nargs=1, required=True,
+        help='Specify a config file')
 
     args = arg_parser.parse_args()
 
     if args.task!=None:
         task=args.task[0]
 
-    with open('config.json') as file:
+    if args.config!=None:
+        config_name=args.config[0]  
+    else:
+        config_name='config.json'      
+
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+    config_file = project_dir + '/project_config/'+ config_name  
+    
+    with open(config_file) as file:
         project_config=json.load(file)
 
     analysis=companyAnalysis('config.json') 
@@ -398,9 +440,10 @@ if __name__=="__main__":
     elif task=='generate_taxdiscount_list':
         analysis.generate_taxdiscount_list()
     elif task=='generate_group_company_list':
-        file_name="G1101_2013.csv"
+        file_name="G1101_2016.csv"
         file_path=os.path.join(project_config['company_folder'], 'G1101', file_name)
-        analysis.generate_group_company_list(file_name)    
+        print(file_path)
+        analysis.generate_group_company_list(file_path, 'G1101', 2016)    
     elif task=='generate_group_company_folder':
         analysis.generate_group_company_folder(project_config['company_folder'])
     else:

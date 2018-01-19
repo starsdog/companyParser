@@ -69,5 +69,24 @@ class dbManager(object):
             raise
         finally: 
             self.close()           
-            
+     
+    def query_fine_record_by_taxcode(self, taxcode):
+        self.connect()
+        try:
+            query_sql="select SELECT factory_fine.penalty_money, factory_corp.registration_no \
+            from factory_fine, factory_corp \
+            where factory_corp.corp_id=%{taxcode}s and factory_corp.registration_no=factory_fine.registration_no"
+            self.cursor.execute(query_sql, {"taxcode":taxcode})
+            fine_record_list=self.cursor.fetchall()
+            penalty_money=0
+            has_fine=False
+            if len(fine_record_list):
+                has_fine=True
+                for record in fine_record_list:
+                    penalty_money+=int(record['penalty_money'])
+            return has_fine, penalty_money, len(fine_record_list)
+        except Exception as e:
+            raise
+        finally: 
+            self.close()            
 
