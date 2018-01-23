@@ -299,12 +299,11 @@ class companyAnalysis(object):
                         group_name=file_info[0]
                         year=file_info[1]
                         file_path=os.path.join(dirPath, f)
-                        groupname_list=self.generate_group_company_list(file_path, group_name, year)
-                        item={"group_no":group_name, "group_name_list":groupname_list}
+                        represent_name=self.generate_group_company_list(file_path, group_name, year)
                         if year in group_name_year:
-                            group_name_year[year].append(item)
+                            group_name_year[year][group_name]=represent_name
                         else:
-                            group_name_year[year]=[item]
+                            group_name_year[year]={group_name:represent_name}
 
         for key in group_name_year:   
             filename="groupName_{}.json".format(key)  
@@ -323,66 +322,92 @@ class companyAnalysis(object):
         stock_map=json.load(stock_input)
         inv_stock={v:k for k, v in stock_map.items()}
 
+        group_representation_stock=int(group_name[1:])
+        group_representation_name=inv_stock[group_representation_stock].replace('股份有限公司', '')
+
         group_detail_info={}
         group_company_list=[]
         company_set=set()
         edgelist=[]
         nodelist=[]
-        group_name_set=set()
         group_penalty_amount=0
         group_has_fine=False
         group_fine_num=0
-        location_map={}
+        fine_company_list=[]
+        target_source_map={}
+        core_company=set()
         for row in reader:
-            if row['sublist.holder']=='NA':
-                row['sublist.holder']=0
-            item={"source":row['source'],"target":row['target'], "taxcode_source":row['taxcode.source'], "taxcode_target":row['taxcode.target'], "holder":row['sublist.holder']}    
+            row['source']=row['source'].replace('臺灣','台灣')
+            row['target']=row['target'].replace('臺灣','台灣')
+            core_company.add(inv_stock[int(row['stock'])])
+            item={"has_fine":False, "source":row['source'],"target":row['target'], "taxcode_source":row['taxcode.source'], "taxcode_target":row['taxcode.target'], "holder":row['sublist.holder']}    
             group_company_list.append(item) 
+            if row['target'] in target_source_map:
+                target_source_map[row['target']]['source_list'].append({"name":row['source'], "holder":row['sublist.holder']})
+            else:
+                target_source_map[row['target']]={"taxcode":row['taxcode.target'],'source_list':[{"name":row['source'], "holder":row['sublist.holder']}]} 
             if row['source'] not in company_set:
                 company_set.add(row['source'])
-                #nodelist.append({"name":row['source']})
-
+                nodelist.append({"name":row['source'], 'taxcode':row['taxcode.source'], 'no_holder':False, 'is_core':False})
+                if row['source'] in stock_map:
+                    source_stock=stock_map[row['source']] 
+                else:
+                    source_stock='NA'
+                self.dbManager.insert_company({"sublist_source":row['source'], "group":row['group'], "stock":source_stock, "taxcode_source":row['taxcode.source']})
+                if row['taxcode.source']!='NA':
+                    has_fine, penalty_money_source, record_num=self.dbManager.query_fine_record_by_taxcode(row['taxcode.source'])
+                    if has_fine:
+                        group_has_fine=True
+                        group_penalty_amount += penalty_money_source
+                        group_fine_num+=record_num
+                        fine_company_list.append({"taxcode":row['taxcode.source'], "name":row['source'], "fine_num":record_num, "penalty_amount":penalty_money_source})
             if row['target'] not in company_set:
                 company_set.add(row['target'])
-                #nodelist.append({"name":row['target']})
+                nodelist.append({"name":row['target'], 'taxcode':row['taxcode.target'], 'no_holder':False, 'is_core':False})
+                if row['target'] in stock_map:
+                    target_stock=stock_map[row['target']]
+                else:
+                    target_stock='NA'    
+                self.dbManager.insert_company({"sublist_source":row['target'], "group":row['group'], "stock":target_stock, "taxcode_source":row['taxcode.target']})
+                if row['taxcode.target']!='NA':
+                    has_fine, penalty_money_target, record_num=self.dbManager.query_fine_record_by_taxcode(row['taxcode.target'])       
+                    if has_fine:
+                        group_has_fine=True
+                        group_penalty_amount += penalty_money_target
+                        group_fine_num+=record_num
+                        fine_company_list.append({"taxcode":row['taxcode.target'], "name":row['target'], "fine_num":record_num, "penalty_amount":penalty_money_target})       
 
-            location_map[row['target']]=row['sublist.location']    
-
-            stock=int(row['stock'])
-            if stock in inv_stock:
-                group_name_set.add(inv_stock[stock])
-
-            if company['taxcode_source']!='NA':
-                has_fine, penalty_money_source, record_num=self.dbManager.query_fine_record_by_taxcode(company['taxcode_source'])
-                if has_fine:
-                    group_has_fine=True
-                    group_penalty_amount += penalty_money_source
-                    group_fine_num+=record_num
-            if company['taxcode_target']!='NA':
-                has_fine, penalty_money_targetm, record_num=self.dbManger.query_fine_record_by_taxcode(company['taxcode_target'])       
-                if has_fine:
-                    group_has_fine=True
-                    group_penalty_amount += penalty_money_target
-                    group_fine_num+=record_num
-                   
-        for company in company_set:
-            if company in location_map:
-                location=location_map[company]
-            else:
-                location='不明'
-                print("{}".format(company))
-            nodelist.append({"name":company, "location":location})
-
+        #check if holder of every parent company is 0
+        for node in nodelist:
+            if node['name'] in core_company:
+                node['is_core']=True
+            if node['name'] in target_source_map:
+                holder=0
+                node['source']=target_source_map[node['name']]['source_list']
+                for source in target_source_map[node['name']]['source_list']:
+                    if source['holder']!='NA':
+                        holder+=float(source['holder']) 
+                    else:
+                        holder+=1    
+                if holder==0:
+                    node['no_holder']=True  
+                    print("{}, {}".format(node['name'], node['no_holder'])) 
+        
         node_idx= {nodelist[i]['name']:i for i in range(len(nodelist))}
         for info in group_company_list:
             target_idx=node_idx[info['target']]   
             source_idx=node_idx[info['source']]
-            owner_holder='%06f'%(float(info['holder'])*100)
+            if info['holder']!='NA':
+                owner_holder='%06f'%(float(info['holder'])*100)
+            else:
+                owner_hodler=info['holder']
             item={"source":source_idx, "target":target_idx, "holder":owner_holder}
             edgelist.append(item)
 
-        group_detail_info['company_summery']={"company_amount":len(list(company_set)), "has_fine":group_has_fine, "fine_record_num":group_fine_num, "fine_penalty_amount":group_penalty_amount}
-        group_detail_info['company_list']=group_company_list    
+        group_detail_info['company_summery']={"group_name":group_representation_name, "company_amount":len(list(company_set)), "has_fine":group_has_fine, "fine_company_amount":len(fine_company_list), "fine_record_num":group_fine_num, "fine_penalty_amount":group_penalty_amount}
+        group_detail_info['company_list']=group_company_list 
+        group_detail_info['fine_company_list']=fine_company_list
+        group_detail_info['target_list']=target_source_map   
         
         file_name="{}_{}_list.json".format(group_name, year)
         file_path=os.path.join(self.config['company_folder'], group_name, file_name)
@@ -397,7 +422,7 @@ class companyAnalysis(object):
         output_handler.write(json.dumps(reparsed_content, ensure_ascii=False))
         output_handler.close()
 
-        return list(group_name_set)
+        return group_representation_name
     
 if __name__=="__main__":
     arg_parser = argparse.ArgumentParser()
@@ -422,7 +447,7 @@ if __name__=="__main__":
     with open(config_file) as file:
         project_config=json.load(file)
 
-    analysis=companyAnalysis('config.json') 
+    analysis=companyAnalysis(config_file) 
     if task=='thaubing':   
         analysis.parseThaubing() 
     elif task=='generate_group_no':

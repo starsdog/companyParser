@@ -8,6 +8,7 @@ class dbManager(object):
         self.user = config['user']
         self.passwd = config['password']
         self.db = config['database']
+        self.port= config['port']
 
         self.charset = "utf8mb4"
         self.cursorclass = pymysql.cursors.DictCursor
@@ -20,6 +21,7 @@ class dbManager(object):
             self.connection= pymysql.connect(host=self.host,
                     user=self.user,
                     passwd=self.passwd,
+                    port=self.port,
                     db=self.db,
                     charset=self.charset,
                     cursorclass=self.cursorclass,
@@ -43,11 +45,14 @@ class dbManager(object):
             for key in item:
                 #if type(book_attr[key])==list and len(book_attr[key])==0:
                 #    continue
-                field_list.append(key)
+                if key=='group':
+                    field_list.append('`{}`'.format(key))
+                else:    
+                    field_list.append(key)
                 param_list.append('%('+key+')s')
 
-            insert_sql="insert into company_info ("+",".join(field_list)+") VALUES ("+ ",".join(param_list)+")"
-            
+            insert_sql="insert into factory_group ("+",".join(field_list)+") VALUES ("+ ",".join(param_list)+")"
+            sql = self.cursor.mogrify(insert_sql, item)
             self.cursor.execute(insert_sql, item)
         except pymysql.InternalError as e:
             print(item)
@@ -73,9 +78,8 @@ class dbManager(object):
     def query_fine_record_by_taxcode(self, taxcode):
         self.connect()
         try:
-            query_sql="select SELECT factory_fine.penalty_money, factory_corp.registration_no \
-            from factory_fine, factory_corp \
-            where factory_corp.corp_id=%{taxcode}s and factory_corp.registration_no=factory_fine.registration_no"
+            query_sql="select factory_fine.penalty_money, factory_corp.registration_no from factory_fine, factory_corp where factory_corp.corp_id=%(taxcode)s and factory_corp.registration_no=factory_fine.registration_no"
+            #print("{}, {}".format(query_sql, taxcode))
             self.cursor.execute(query_sql, {"taxcode":taxcode})
             fine_record_list=self.cursor.fetchall()
             penalty_money=0
