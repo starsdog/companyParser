@@ -1,6 +1,6 @@
 var graph_area={
-    'submit':function(year){
-        graph_file='/companydata/G1101/G1101_'+year+'_graph.json';
+    'submit':function(year, group){
+        graph_file='/companydata/group_relation/'+group+'/'+group+'_'+year+'_graph.json';
         d3.json(graph_file, function(json) {
             function GroupExplorer(wrapper,config){
                 var defaultConfig={

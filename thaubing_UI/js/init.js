@@ -1,6 +1,6 @@
 var year=2016;
-function open_graph(){
-    window.open('/companydata/graph.html?year='+year, '關係圖', config='height=800,width=1024');
+function open_graph(year, group_name){
+    window.open('/companydata/graph.html?year='+year+'&group='+group_name, '關係圖', config='height=800,width=1024');
 }
 var groupName_table={
     'group_map':new Object(),
@@ -8,7 +8,6 @@ var groupName_table={
     'prepareTable':function(result){
         var row='<tr>';
         var count=1;
-        console.log(result);
         $.each(result, function (index, group_no) {
             var link='/group/name/'+group_no;
             row+='<td><a href="'+link+'">'+groupName_table.group_map[group_no]+'</td>';
@@ -16,7 +15,6 @@ var groupName_table={
                 row+='</tr><tr>';
             }
             count+=1;
-            console.log(row);
         });  
         row += '</tr>'; 
         $('#table_group_list').append(row); 
@@ -27,7 +25,7 @@ var groupName_table={
             groupName_table.prepareTable(result);
         }
         else{
-            group_file='/companydata/groupName_'+year+'.json';
+            group_file='/companydata/group_relation/groupName_'+year+'.json';
             $.get(group_file,function(data){
                 groupName_table.group_map=data;
                 groupName_table.prepareTable(result);
@@ -61,7 +59,7 @@ var summery_table={
        row+='<div><span>有裁罰記錄公司總數: '+data.fine_company_amount+'</span></div>';
        row+='<div><span>裁罰記錄總數: '+data.fine_record_num+'</span></div>';
        row+='<div><span>裁罰金額總數: '+data.fine_penalty_amount+'</span></div>';
-       row+='<div><span>關係圖: </span><button class="btn btn-link" onclick="open_graph(); return false;"><i class="glyphicon glyphicon-stats"></i></button></div>';
+       row+='<div><span>關係圖: </span><button class="btn btn-link" onclick="open_graph(\''+year+'\',\''+data.group_no+'\'); return false;"><i class="glyphicon glyphicon-stats"></i></button></div>';
        $('#summery_content').append(row);
     },  
 

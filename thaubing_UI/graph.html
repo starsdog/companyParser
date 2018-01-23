@@ -24,9 +24,13 @@
     <div id="relation_show"></div>
 </div>
 <script>
-var year = location.search.split('year')[1];
-year=year.split('=')[1];
-graph_area.submit(year);
+var param = location.search.split('&');
+console.log(param);
+year=param[0].split('=')[1];
+console.log(year);
+group=param[1].split('=')[1];
+console.log(group);
+graph_area.submit(year, group);
 </script>
 </body>
 </html>

@@ -1,6 +1,5 @@
 <?php
 
-$year=2016;
 function grouprelation_menu() {
   $items['group/search'] = array(
     'page callback' => 'grouprelation_search',
@@ -33,7 +32,8 @@ function grouprelation_menu() {
 }
 
 function find_group_json($group_name){
-    $json_base_path = base_path().'companydata/';
+    $year=2016;
+    $json_base_path = base_path().'companydata/group_relation/';
     $json_filename=$group_name.'_'.$year.'_list.json';
     $json_file = $json_base_path .$group_name.'/'.$json_filename;
     #$json_test = $json_base_path .$json_filename;
@@ -73,7 +73,7 @@ function groupinfo_show($group_name){
     //drupal_set_message(var_export($group_name, TRUE));
     init_library();
     init_custom();
-    
+  
     find_group_json($group_name);
     $output='';
     /*
@@ -91,12 +91,12 @@ function groupinfo_show($group_name){
     $output .= '</div>';
     */
 
-    $output .= '<div id="table_summery_area" style="display: none">';
+    $output .= '<div id="table_summery_area" style="display: none; width:100%">';
     $output .= '<div id="summery_content">';
     $output .= '</div></div>';
 
-    $output .= '<div id="table_company_area" style="display: none">';
-    $output .= '<table id="table_company">';
+    $output .= '<div id="table_company_area" style="display: none" >';
+    $output .= '<table id="table_company" >';
     $output .= '<thead><tr>';
     $output .= '<th >子公司統一編號</th>';
     $output .= '<th >子公司名稱</th>';
@@ -104,7 +104,7 @@ function groupinfo_show($group_name){
     $output .= '</tr></thead></table>';
     $output .= '</div>';
 
-    $output .= '<div id="table_fine_company_area" style="display: none">';
+    $output .= '<div id="table_fine_company_area" style="display: none" >';
     $output .= '<table id="table_fine_company">';
     $output .= '<thead><tr>';
     $output .= '<th >公司名稱</th>';
@@ -114,7 +114,7 @@ function groupinfo_show($group_name){
     $output .= '</tr></thead></table>';
     $output .= '</div>';
 
-    $output .= '<div id="table_fine_record_area" style="display: none">';
+    $output .= '<div id="table_fine_record_area" style="display: none" >';
     $output .= '<table id="table_fine_record">';
     $output .= '<thead><tr>';
     $output .= '<th >工廠名稱</th>';
@@ -129,33 +129,36 @@ function groupinfo_show($group_name){
 }
 
 function query_belong_group($search_target, $search_type){
-
+  $year=2016;
   $query = "SELECT factory_group.group from factory_group";
   if($search_type=='source'){
     $query .= " where sublist_source like :search_target";
     $args = array(
         ':search_target' => '%'.db_like($search_target).'%',
+        ':year'=>$year
     );
   }
   else if($search_type=='taxcode'){
     $query .= " where taxcode_source =:search_target";
     $args = array(
         ':search_target' => $search_target,
+        ':year'=>$year
     );
   }
    else if($search_type=='stock'){
     $query .= " where stock =:search_target";
     $args = array(
         ':search_target' => $search_target,
+        ':year'=>$year
     );
   }
-  
+  $query .= " and year=:year";
   $result = db_query($query, $args);
   $rows = array();
   foreach($result as $r) {
     array_push($rows, $r->group);
   }
-  //drupal_set_message(var_export(json_encode($rows), TRUE));
+  //drupal_set_message(var_export($year, TRUE));
 
   echo "<script>var group_name =".json_encode($rows).";</script>";
 }

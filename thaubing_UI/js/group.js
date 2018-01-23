@@ -3,7 +3,7 @@ if (typeof json_path != 'undefined'){
 } 
 if (typeof group_name != 'undefined'){
     if(group_name=='all'){
-        group_file='/companydata/groupName_'+year+'.json';
+        group_file='/companydata/group_relation/groupName_'+year+'.json';
         $.get(group_file,function(data){
             group_no_list=[];
             $.each(data, function (index, dict) {
@@ -73,9 +73,11 @@ function GroupInfo(json){
     this.fine_company_amount=json ? json.fine_company_amount:null;
     this.fine_record_num=json ? json.fine_record_num:null;
     this.fine_penalty_amount=json ? json.fine_penalty_amount:null;
-
+    this.group_no=json ? json.group_no:null;
+    
     this.rawJSON = function () {
         return {
+            'group_no': this.group_no,
             'group_name': this.group_name,
             'company_amount': this.company_amount,
             "has_fine": this.has_fine,
@@ -178,7 +180,10 @@ function query_group(){
         
         summery_table.show();
         company_table.show();
-        fine_company_table.show();
+        if(summery['has_fine']==true)
+            fine_company_table.show();
+        else
+            fine_company_table.hide();
     });
 }
 
