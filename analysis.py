@@ -291,6 +291,10 @@ class companyAnalysis(object):
 
     def generate_group_company_folder(self, folder_path):
         group_name_year={}
+        filename="groupCommon.json"  
+        common_name_handler=open(filename, 'r')
+        common_name_map=json.load(common_name_handler)
+
         for dirPath, dirNames, fileNames in os.walk(folder_path):        
                 for f in fileNames:
                     if '.csv' in f:
@@ -299,11 +303,18 @@ class companyAnalysis(object):
                         group_name=file_info[0]
                         year=file_info[1]
                         file_path=os.path.join(dirPath, f)
-                        represent_name=self.generate_group_company_list(file_path, group_name, year)
+                        try:
+                            represent_name=self.generate_group_company_list(file_path, group_name, year)
+                        except Exception as e:
+                            print(f)
+                            raise
                         if year in group_name_year:
-                            group_name_year[year][group_name]=represent_name
+                            if group_name not in group_name_year[year]:
+                                group_name_year[year][group_name]=represent_name
                         else:
-                            group_name_year[year]={group_name:represent_name}
+                            group_name_year[year]=common_name_map
+                            if group_name not in group_name_year[year]:
+                                group_name_year[year][group_name]=represent_name
 
         for key in group_name_year:   
             filename="groupName_{}.json".format(key)  
@@ -322,8 +333,9 @@ class companyAnalysis(object):
         stock_map=json.load(stock_input)
         inv_stock={v:k for k, v in stock_map.items()}
 
-        group_representation_stock=int(group_name[1:])
-        group_representation_name=inv_stock[group_representation_stock].replace('股份有限公司', '')
+        filename="groupCommon.json"  
+        common_name_handler=open(filename, 'r')
+        common_name_map=json.load(common_name_handler)
 
         group_detail_info={}
         group_company_list=[]
@@ -340,6 +352,11 @@ class companyAnalysis(object):
             row['source']=row['source'].replace('臺灣','台灣')
             row['target']=row['target'].replace('臺灣','台灣')
             core_company.add(inv_stock[int(row['stock'])])
+            if len(core_company)==1:
+                if group_name in common_name_map:
+                    group_representation_name=common_name_mapp[group_name]
+                else:    
+                    group_representation_name=list(core_company)[0].replace('股份有限公司', '')
             item={"has_fine":False, "source":row['source'],"target":row['target'], "taxcode_source":row['taxcode.source'], "taxcode_target":row['taxcode.target'], "holder":row['sublist.holder']}    
             group_company_list.append(item) 
             if row['target'] in target_source_map:
@@ -353,7 +370,7 @@ class companyAnalysis(object):
                     source_stock=stock_map[row['source']] 
                 else:
                     source_stock='NA'
-                self.dbManager.insert_company({"sublist_source":row['source'], "group":row['group'], "stock":source_stock, "taxcode_source":row['taxcode.source']})
+                self.dbManager.insert_company({"year":year, "sublist_source":row['source'], "group":row['group'], "stock":source_stock, "taxcode_source":row['taxcode.source']})
                 if row['taxcode.source']!='NA':
                     has_fine, penalty_money_source, record_num=self.dbManager.query_fine_record_by_taxcode(row['taxcode.source'])
                     if has_fine:
@@ -368,7 +385,7 @@ class companyAnalysis(object):
                     target_stock=stock_map[row['target']]
                 else:
                     target_stock='NA'    
-                self.dbManager.insert_company({"sublist_source":row['target'], "group":row['group'], "stock":target_stock, "taxcode_source":row['taxcode.target']})
+                self.dbManager.insert_company({"year":year, "sublist_source":row['target'], "group":row['group'], "stock":target_stock, "taxcode_source":row['taxcode.target']})
                 if row['taxcode.target']!='NA':
                     has_fine, penalty_money_target, record_num=self.dbManager.query_fine_record_by_taxcode(row['taxcode.target'])       
                     if has_fine:
@@ -390,8 +407,7 @@ class companyAnalysis(object):
                     else:
                         holder+=1    
                 if holder==0:
-                    node['no_holder']=True  
-                    print("{}, {}".format(node['name'], node['no_holder'])) 
+                    node['no_holder']=True
         
         node_idx= {nodelist[i]['name']:i for i in range(len(nodelist))}
         for info in group_company_list:
@@ -400,11 +416,11 @@ class companyAnalysis(object):
             if info['holder']!='NA':
                 owner_holder='%06f'%(float(info['holder'])*100)
             else:
-                owner_hodler=info['holder']
+                owner_holder=info['holder']
             item={"source":source_idx, "target":target_idx, "holder":owner_holder}
             edgelist.append(item)
 
-        group_detail_info['company_summery']={"group_name":group_representation_name, "company_amount":len(list(company_set)), "has_fine":group_has_fine, "fine_company_amount":len(fine_company_list), "fine_record_num":group_fine_num, "fine_penalty_amount":group_penalty_amount}
+        group_detail_info['company_summery']={"group_no":group_name, "group_name":group_representation_name, "company_amount":len(list(company_set)), "has_fine":group_has_fine, "fine_company_amount":len(fine_company_list), "fine_record_num":group_fine_num, "fine_penalty_amount":group_penalty_amount}
         group_detail_info['company_list']=group_company_list 
         group_detail_info['fine_company_list']=fine_company_list
         group_detail_info['target_list']=target_source_map   
@@ -424,6 +440,55 @@ class companyAnalysis(object):
 
         return group_representation_name
     
+    def generate_stock_list(self, group_name, file_path):
+        common_groupname_input=open(self.config['common_groupname'])
+        common_groupname_map=json.load(common_groupname_input)
+
+        #stock map which combine otc, pub, rotc, sii
+        stock_input=open(self.config['stock_map'])
+        stock_map=json.load(stock_input)
+        inv_stock={v:k for k, v in stock_map.items()}
+        
+        group_stock_map={"group_no":group_name}
+        group_stock_list=set()
+        common_groupname_list=set()
+        input_handler=open(file_path, 'r')
+        reader=csv.DictReader(input_handler)
+        for row in reader:
+            if int(row['stock']) in inv_stock:
+                group_stock_list.add(row['stock'])
+            if row['stock'] in common_groupname_map:
+                common_groupname_list.add(common_groupname_map[row['stock']])
+        
+        group_stock_map['group_stock_list']=list(group_stock_list)
+        group_stock_map['common_groupname']=list(common_groupname_list)
+        #print(group_stock_map)
+
+        return group_stock_map
+
+    
+    def compare_common_group_name(self, folder_path):
+        group_name_detail=[]
+        group_common_name={}
+        for dirPath, dirNames, fileNames in os.walk(folder_path):        
+                for f in fileNames:
+                    if '.csv' in f:
+                        sub_f=f[:-4]
+                        file_info=sub_f.split('_')
+                        group_name=file_info[0]
+                        file_path=os.path.join(dirPath, f)                        
+                        group_represent_stock=self.generate_stock_list(group_name, file_path)
+                        group_name_detail.append(group_represent_stock)
+                        if len(group_represent_stock['common_groupname'])>1:
+                            print("common_group definition isn't the same, {}".format(group_represent_stock))
+                        if len(group_represent_stock['common_groupname'])==1:
+                            group_common_name[group_represent_stock['group_no']]=group_represent_stock['common_groupname'][0]
+        
+        filename="groupCommon.json"  
+        output_handler=open(filename, 'w')
+        output_handler.write(json.dumps(group_common_name, ensure_ascii=False))
+        output_handler.close() 
+
 if __name__=="__main__":
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('-t', '--task', metavar='parse', type=str, nargs=1, required=True,
@@ -471,5 +536,7 @@ if __name__=="__main__":
         analysis.generate_group_company_list(file_path, 'G1101', 2016)    
     elif task=='generate_group_company_folder':
         analysis.generate_group_company_folder(project_config['company_folder'])
+    elif task=='compare_common_group_name':
+        analysis.compare_common_group_name(project_config['company_folder'])
     else:
         print("no match task")        
