@@ -1,12 +1,20 @@
 //- module
 .section.bg-warning.section-what: .inner
   .text-center: h2 開放集團開源資料
-  p 公開集團資料以JSON格式儲存，JSON格式內包含三個部份:
+  p 公開集團資料以CSV與JSON格式儲存. CSV為原始集團資料, JSON格式整合「透明足跡」裁罰記錄. 
+  p CSV格式包含欄位包括:
+  ul
+  li 基本資料: 年份(year), 財報公司台灣股票代號(stock), 母公司(source), 子公司(target), 母公司持股比例(sublist.holder), 子公司所在國家(sublist.location), 母公司統一編號(taxcode.source), 子公司統一編號(taxcode.target)
+  li 資料出處: 母公司是否為財報公司(sublist.is_coreSource), 資料表格出處(sublist.table_source1-列入合併財務報表之子公司, sublist.table_source2-被投資公司名稱, sublist.table_source3-轉投資大陸地區之事業, sublist.table_source4-核心公司董監事及法人代表), 發行方式(market:上市, 上櫃, 興櫃, 公開發行)
+  li 其他: 大陸地區表格註解(china.note), 人工處理註記(X1, 修正), 非集團的控股公司(非集團, 標註1為非集團,例如投資銀行、政府機關)
+  br
+  p JSON格式內包含三個部份:
   ul
   li 集團簡介: 包含集團名稱，集團內公司數量，集團是否有裁罰記錄，集團內有裁罰記錄的公司數量，集團內於臺灣環境裁罰記錄數量 集團內於臺灣環保署裁罰金額。
   li 集團公司關係列表: 包含母公司，子公司，母公司統一編號，子公司統一編號，母公司持股比例
   li 集團內有裁罰記錄的公司列表: 包含公司名程，公司統一編號，裁罰記錄數量，裁罰總金額
   li 集團內子公司列表: 包含公司統一編號，母公司列表與持股比例
+  br
   .text-center
-    .btn.btn-link.btn-lg.mr-2: a(href="https://github.com/starsdog/companyParser.git") 開源資料 #[i.fa.fa-github]
+    .btn.btn-link.btn-lg.mr-2: a(href="https://github.com/starsdog/openGroups.git") 開源資料 #[i.fa.fa-github]
   
