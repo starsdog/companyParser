@@ -5,6 +5,7 @@ import argparse
 import os
 from dbManager import dbManager 
 from openpyxl import load_workbook
+import operator
 
 class companyAnalysis(object):
     def __init__(self, config_file):
@@ -151,7 +152,6 @@ class companyAnalysis(object):
                     else:
                         factory_fine_list[taxcode]={"record_count":1, "money_amount":int(row['penalty_money']), "record":[row]}        
         
-        print(factory_fine_list)
         file_path=os.path.join(self.config['factory_folder'],'fine_corp.json')
         output_handler=open(file_path, 'w')
         output_handler.write(json.dumps(factory_fine_list, ensure_ascii=False))
@@ -180,10 +180,6 @@ class companyAnalysis(object):
             output_handler.write(json.dumps(list(taxdiscount),ensure_ascii=False))
             output_handler.close()
             
-    def parse_violate_rule(self, filename):
-        input_handler=open(filename, 'r')
-        reader=csv.DictReader(input_handler)
-
     def generate_group_list(self):
         file_name="groupdata.taxcode.{}.csv".format(self.config['start'])
         file_path=os.path.join(self.company_group, file_name)
@@ -289,8 +285,20 @@ class companyAnalysis(object):
         output_handler.write(json.dumps(group_name_list, ensure_ascii=False))
         output_handler.close()      
 
+    def count_company_number(self, folder_path):
+        company_count=0
+        for dirPath, dirNames, fileNames in os.walk(folder_path):        
+                for f in fileNames:
+                    if '_2016_list.json' in f:
+                       file_path=os.path.join(dirPath, f)
+                       input_handler=open(file_path)
+                       content=json.load(input_handler) 
+                       company_count+=content['company_summery']['company_amount']
+        print(company_count)              
+
     def generate_group_company_folder(self, folder_path):
         group_name_year={}
+        group_record_year={}
         filename="groupCommon.json"  
         common_name_handler=open(filename, 'r')
         common_name_map=json.load(common_name_handler)
@@ -304,25 +312,40 @@ class companyAnalysis(object):
                         year=file_info[1]
                         file_path=os.path.join(dirPath, f)
                         try:
-                            represent_name=self.generate_group_company_list(file_path, group_name, year)
+                            represent_name, represent_list, group_fine_num=self.generate_group_company_list(file_path, group_name, year)
+                            
                         except Exception as e:
                             print(f)
                             raise
-                        if year in group_name_year:
-                            if group_name not in group_name_year[year]:
-                                group_name_year[year][group_name]=represent_name
-                        else:
-                            group_name_year[year]=common_name_map
-                            if group_name not in group_name_year[year]:
-                                group_name_year[year][group_name]=represent_name
+                        if year not in group_name_year:
+                            group_name_year[year]={}
+                        if year not in group_record_year:
+                            group_record_year[year]={}
+                        
+                        if group_name not in group_name_year[year]:
+                            #print("{}, {}".format(represent_name, represent_list))
+                            group_name_year[year][group_name]={"group_no":group_name, "name":represent_name, "name_list":represent_list, "fine_num":group_fine_num}
+                            group_record_year[year][group_name]=group_fine_num
 
         for key in group_name_year:   
-            filename="groupName_{}.json".format(key)  
+            filename="groupName_{}.json".format(key)
+            index_filename="groupNameIndex_{}.json".format(key)
             file_path=os.path.join(self.config['company_folder'], filename)
+            index_file_path=os.path.join(self.config['company_folder'], index_filename)
+            sorted_group=sorted(group_record_year[key].items(), key=operator.itemgetter(1), reverse=True)
+            sort_group_name=[]
+            sort_group_index={}
+            idx=0
+            for group_no, fine_record in sorted_group:
+                sort_group_name.append(group_name_year[key][group_no])
+                sort_group_index[group_no]=idx
+                idx+=1
             output_handler=open(file_path, 'w')
-            output_handler.write(json.dumps(group_name_year[key], ensure_ascii=False))
+            output_handler.write(json.dumps(sort_group_name, ensure_ascii=False))
             output_handler.close()        
-
+            output_handler=open(index_file_path, 'w')
+            output_handler.write(json.dumps(sort_group_index, ensure_ascii=False))
+            output_handler.close()    
 
     def generate_group_company_list(self, file_path, group_name, year):
         input_handler=open(file_path, 'r')
@@ -332,8 +355,8 @@ class companyAnalysis(object):
         stock_input=open(self.config['stock_map'])
         stock_map=json.load(stock_input)
         inv_stock={v:k for k, v in stock_map.items()}
-
-        filename="groupCommon.json"  
+        
+        filename="mops_groupname.json"  
         common_name_handler=open(filename, 'r')
         common_name_map=json.load(common_name_handler)
 
@@ -348,15 +371,12 @@ class companyAnalysis(object):
         fine_company_list=[]
         target_source_map={}
         core_company=set()
+        core_company_stock=set()
         for row in reader:
             row['source']=row['source'].replace('臺灣','台灣')
             row['target']=row['target'].replace('臺灣','台灣')
             core_company.add(inv_stock[int(row['stock'])])
-            if len(core_company)==1:
-                if group_name in common_name_map:
-                    group_representation_name=common_name_mapp[group_name]
-                else:    
-                    group_representation_name=list(core_company)[0].replace('股份有限公司', '')
+            core_company_stock.add(row['stock'])
             item={"has_fine":False, "source":row['source'],"target":row['target'], "taxcode_source":row['taxcode.source'], "taxcode_target":row['taxcode.target'], "holder":row['sublist.holder']}    
             group_company_list.append(item) 
             if row['target'] in target_source_map:
@@ -370,9 +390,11 @@ class companyAnalysis(object):
                     source_stock=stock_map[row['source']] 
                 else:
                     source_stock='NA'
+                
                 self.dbManager.insert_company({"year":year, "sublist_source":row['source'], "group":row['group'], "stock":source_stock, "taxcode_source":row['taxcode.source']})
                 if row['taxcode.source']!='NA':
                     has_fine, penalty_money_source, record_num=self.dbManager.query_fine_record_by_taxcode(row['taxcode.source'])
+                    #has_fine=False
                     if has_fine:
                         group_has_fine=True
                         group_penalty_amount += penalty_money_source
@@ -388,11 +410,29 @@ class companyAnalysis(object):
                 self.dbManager.insert_company({"year":year, "sublist_source":row['target'], "group":row['group'], "stock":target_stock, "taxcode_source":row['taxcode.target']})
                 if row['taxcode.target']!='NA':
                     has_fine, penalty_money_target, record_num=self.dbManager.query_fine_record_by_taxcode(row['taxcode.target'])       
+                    #has_fine=False
                     if has_fine:
                         group_has_fine=True
                         group_penalty_amount += penalty_money_target
                         group_fine_num+=record_num
                         fine_company_list.append({"taxcode":row['taxcode.target'], "name":row['target'], "fine_num":record_num, "penalty_amount":penalty_money_target})       
+        
+        group_representation_name=''
+        group_representation_list=[]
+        group_representation_stock=group_name[1:]
+        if group_representation_stock in common_name_map:
+            group_representation_name += common_name_map[group_representation_stock]
+            group_representation_list.append(common_name_map[group_representation_stock])
+            count=1
+            core_company_stock.remove(group_representation_stock)
+        else:    
+            count=0
+        for stock in list(core_company_stock):
+            if str(stock) in common_name_map:
+                if count < 2:
+                    group_representation_name += common_name_map[str(stock)]
+                    count+=1
+                group_representation_list.append(common_name_map[str(stock)])
 
         #check if holder of every parent company is 0
         for node in nodelist:
@@ -438,7 +478,7 @@ class companyAnalysis(object):
         output_handler.write(json.dumps(reparsed_content, ensure_ascii=False))
         output_handler.close()
 
-        return group_representation_name
+        return group_representation_name, group_representation_list, group_fine_num
     
     def generate_stock_list(self, group_name, file_path):
         common_groupname_input=open(self.config['common_groupname'])
@@ -462,10 +502,8 @@ class companyAnalysis(object):
         
         group_stock_map['group_stock_list']=list(group_stock_list)
         group_stock_map['common_groupname']=list(common_groupname_list)
-        #print(group_stock_map)
-
+        
         return group_stock_map
-
     
     def compare_common_group_name(self, folder_path):
         group_name_detail=[]
@@ -489,6 +527,25 @@ class companyAnalysis(object):
         output_handler.write(json.dumps(group_common_name, ensure_ascii=False))
         output_handler.close() 
 
+    def genearte_mops_groupname(self, folder_path):
+        for dirPath, dirNames, fileNames in os.walk(folder_path):        
+                for f in fileNames:
+                    if '.csv' in f:
+                        mops_group_dict={}
+                        filename_info=f.split('_')
+                        file_path=os.path.join(dirPath, f)
+                        input_handler=open(file_path, 'r')
+                        reader=csv.DictReader(input_handler)
+                        for row in reader:
+                            stock=row['公司代號']
+                            companyName=row['公司名稱']
+                            mops_group_dict[stock]=companyName
+
+                        filename="mops_groupname.json"
+                        output_handler=open(filename, 'w')
+                        output_handler.write(json.dumps(mops_group_dict, ensure_ascii=False))
+                        output_handler.close()     
+                            
 if __name__=="__main__":
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('-t', '--task', metavar='parse', type=str, nargs=1, required=True,
@@ -538,5 +595,9 @@ if __name__=="__main__":
         analysis.generate_group_company_folder(project_config['company_folder'])
     elif task=='compare_common_group_name':
         analysis.compare_common_group_name(project_config['company_folder'])
+    elif task=='generate_mops_groupname':
+        analysis.genearte_mops_groupname(project_config['mops_groupfolder'])
+    elif task=='count_company_number':
+        analysis.count_company_number(project_config['company_folder'])
     else:
         print("no match task")        
