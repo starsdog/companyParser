@@ -78,7 +78,7 @@ class dbManager(object):
     def query_fine_record_by_taxcode(self, taxcode):
         self.connect()
         try:
-            query_sql="select factory_fine.penalty_money, factory_corp.registration_no from factory_fine, factory_corp where factory_corp.corp_id=%(taxcode)s and factory_corp.registration_no=factory_fine.registration_no"
+            query_sql="select factory_fine.facility_name, factory_fine.penalty_money, factory_corp.registration_no, factory_fine.fine_or_note from factory_fine, factory_corp where factory_corp.corp_id=%(taxcode)s and factory_corp.registration_no=factory_fine.registration_no"
             #print("{}, {}".format(query_sql, taxcode))
             self.cursor.execute(query_sql, {"taxcode":taxcode})
             fine_record_list=self.cursor.fetchall()
@@ -87,7 +87,11 @@ class dbManager(object):
             if len(fine_record_list):
                 has_fine=True
                 for record in fine_record_list:
-                    penalty_money+=int(record['penalty_money'])
+                    if record['fine_or_note']:
+                        penalty_money+=int(record['penalty_money'])
+                    #else:
+                    #    print(record)
+
             return has_fine, penalty_money, len(fine_record_list)
         except Exception as e:
             raise
