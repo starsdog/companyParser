@@ -148,7 +148,7 @@ final.compare$統編更正 <- as.character(final.compare$統編更正)
 
 write.xlsx(final.compare, 'taxcode_v2.xlsx', showNA = FALSE)
 
-############統編校正後處理###################
+############統編校正後處理##################
 
 compare.taxcode.result <- read.csv('compare.taxcode.result.csv', colClasses=c('character'))
 
